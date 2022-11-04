@@ -23,7 +23,6 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
     private final DelegatingDataSource<Log> logSource = new DelegatingDataSource<>();
     private final DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping = new DelegatingDataSource<>();
-
     private final DelegatingEvaluator<Place, ImplicitnessRating> implicitnessEvaluator = new DelegatingEvaluator<>();
     private final DelegatingEvaluator<Place, VariantMarkingHistories> markingHistoriesEvaluator = new DelegatingEvaluator<>();
     private final EventSupervision<DebugEvent> eventSupervisor = PipeWorks.eventSupervision();
@@ -65,8 +64,12 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
     }
 
+
     @Override
     protected void initSelf() {
+        initSelf();
 
     }
+
+    //Test
 }
