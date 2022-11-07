@@ -42,7 +42,7 @@ import org.processmining.specpp.util.PublicPaths;
 public class PlaceEvaluatorDevelopment {
 
     public static void main(String[] args) {
-        String path = PublicPaths.SAMPLE_EVENTLOG_2;
+        String path = PublicPaths.SAMPLE_EVENTLOG_LTDEX;
         PreProcessingParameters prePar = PreProcessingParameters.getDefault();
         InputDataBundle inputData = InputData.loadData(path, prePar).getData();
         SPECppConfigBundle configuration = createConfiguration();
@@ -83,9 +83,10 @@ public class PlaceEvaluatorDevelopment {
 
         PostProcessingConfiguration.Configurator<CollectionOfPlaces, CollectionOfPlaces> temp_ppConfig = Configurators.postProcessing();
         // ppConfig.processor(SelfLoopPlaceMerger::new);
-        temp_ppConfig.addPostProcessor(new ReplayBasedImplicitnessPostProcessing.Builder())
-                     .addPostProcessor(new LPBasedImplicitnessPostProcessing.Builder())
-                     .addPostProcessor(SelfLoopPlaceMerger::new);
+        temp_ppConfig
+        // .addPostProcessor(new ReplayBasedImplicitnessPostProcessing.Builder())
+                    // .addPostProcessor(new LPBasedImplicitnessPostProcessing.Builder())
+                    .addPostProcessor(SelfLoopPlaceMerger::new);
         PostProcessingConfiguration.Configurator<CollectionOfPlaces, ProMPetrinetWrapper> ppConfig = temp_ppConfig.addPostProcessor(ProMConverter::new);
 
         // ** Parameters ** //
