@@ -30,7 +30,7 @@ public class ProMLessSPECpp {
     }
 
     public static void run(String inputLogPath, String outputPetrinetPath) {
-        run(inputLogPath, outputPetrinetPath, new PreProcessingParameters(new XEventNameClassifier(), false, AverageFirstOccurrenceIndex.class), CodeDefinedConfigurationSample.createConfiguration());
+        run(inputLogPath, outputPetrinetPath, new PreProcessingParameters(new XEventNameClassifier(), false, AverageFirstOccurrenceIndex.class), DevelopmentEntryPoint.createConfiguration());
     }
 
     public static void run(String inputLogPath, String outputPetrinetPath, PreProcessingParameters preProcessingParameters, SPECppConfigBundle configBundle) {

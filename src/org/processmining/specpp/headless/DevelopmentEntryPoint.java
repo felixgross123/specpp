@@ -1,5 +1,6 @@
 package org.processmining.specpp.headless;
 
+import org.deckfour.xes.classification.XEventNameClassifier;
 import org.processmining.specpp.base.AdvancedComposition;
 import org.processmining.specpp.componenting.data.ParameterRequirements;
 import org.processmining.specpp.componenting.evaluation.EvaluatorConfiguration;
@@ -10,6 +11,7 @@ import org.processmining.specpp.config.*;
 import org.processmining.specpp.config.parameters.ParameterProvider;
 import org.processmining.specpp.config.parameters.PlaceGeneratorParameters;
 import org.processmining.specpp.config.parameters.SupervisionParameters;
+import org.processmining.specpp.config.parameters.TauFitnessThresholds;
 import org.processmining.specpp.datastructures.petri.CollectionOfPlaces;
 import org.processmining.specpp.datastructures.petri.Place;
 import org.processmining.specpp.datastructures.petri.ProMPetrinetWrapper;
@@ -25,12 +27,11 @@ import org.processmining.specpp.evaluation.markings.LogHistoryMaker;
 import org.processmining.specpp.orchestra.PreProcessingParameters;
 import org.processmining.specpp.orchestra.SPECppConfigBundle;
 import org.processmining.specpp.orchestra.SPECppOperations;
-import org.processmining.specpp.postprocessing.LPBasedImplicitnessPostProcessing;
-import org.processmining.specpp.postprocessing.ProMConverter;
-import org.processmining.specpp.postprocessing.ReplayBasedImplicitnessPostProcessing;
-import org.processmining.specpp.postprocessing.SelfLoopPlaceMerger;
+import org.processmining.specpp.postprocessing.*;
 import org.processmining.specpp.preprocessing.InputData;
 import org.processmining.specpp.preprocessing.InputDataBundle;
+import org.processmining.specpp.preprocessing.orderings.AbsoluteActivityFrequency;
+import org.processmining.specpp.preprocessing.orderings.AverageFirstOccurrenceIndex;
 import org.processmining.specpp.prom.mvc.config.ConfiguratorCollection;
 import org.processmining.specpp.proposal.ConstrainablePlaceProposer;
 import org.processmining.specpp.supervision.supervisors.BaseSupervisor;
@@ -39,11 +40,11 @@ import org.processmining.specpp.supervision.supervisors.TerminalSupervisor;
 import org.processmining.specpp.util.PublicPaths;
 
 
-public class PlaceEvaluatorDevelopment {
+public class DevelopmentEntryPoint {
 
     public static void main(String[] args) {
         String path = PublicPaths.SAMPLE_EVENTLOG_LTDEX;
-        PreProcessingParameters prePar = PreProcessingParameters.getDefault();
+        PreProcessingParameters prePar = new PreProcessingParameters(new XEventNameClassifier(), true, AverageFirstOccurrenceIndex.class);
         InputDataBundle inputData = InputData.loadData(path, prePar).getData();
         SPECppConfigBundle configuration = createConfiguration();
         SPECppOperations.configureAndExecute(configuration, inputData, false);
@@ -77,6 +78,8 @@ public class PlaceEvaluatorDevelopment {
                                                                                                                                   .proposer(new ConstrainablePlaceProposer.Builder());
 
         pcConfig.terminalComposer(FelixNewPlaceComposer::new);
+        // PlaceAccepter oder CIPR
+
         pcConfig.composerChain(PlaceFitnessFilter::new);
 
         // ** Post Processing ** //
@@ -95,8 +98,9 @@ public class PlaceEvaluatorDevelopment {
             @Override
             public void init() {
                 globalComponentSystem().provide(ParameterRequirements.IMPLICITNESS_TESTING.fulfilWithStatic(new ImplicitnessTestingParameters(ImplicitnessTestingParameters.CIPRVersion.ReplayBased, ImplicitnessTestingParameters.SubLogRestriction.None)))
-                                       .provide(ParameterRequirements.PLACE_GENERATOR_PARAMETERS.fulfilWithStatic(new PlaceGeneratorParameters(6, true, false, false, false)))
-                                       .provide(ParameterRequirements.SUPERVISION_PARAMETERS.fulfilWithStatic(SupervisionParameters.instrumentNone(true, false)));
+                                       .provide(ParameterRequirements.PLACE_GENERATOR_PARAMETERS.fulfilWithStatic(new PlaceGeneratorParameters(Integer.MAX_VALUE, true, false, false, false)))
+                                       .provide(ParameterRequirements.SUPERVISION_PARAMETERS.fulfilWithStatic(SupervisionParameters.instrumentNone(true, false)))
+                        .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(1.0)));
             }
         };
 

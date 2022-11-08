@@ -73,8 +73,8 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
         //eventSupervisor.observe(new DebugEvent("read me"));
 
-        System.out.println("Evaluating Place " + candidate);
 
+        System.out.println("Evaluating Place " + candidate);
 
         Log log = logSource.getData();
 
@@ -219,7 +219,6 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
         //update ActivityPlaceMapping
         addToActivityPlacesMapping(candidate);
-        checkPrematureAbort();
 
     }
 
@@ -282,7 +281,19 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
     @Override
     public boolean isFinished() {
-        return abort;
+        for(Place p : composition) {
+            if(placeToEscapingEdges.get(p) != 0) {
+                return false;
+            }
+        }
+        Set<Map.Entry<Activity, Set<Place>>> s  = activityToIngoingPlaces.entrySet();
+        for(Map.Entry<Activity, Set<Place>> se  : s) {
+            if (!se.getKey().equals(Factory.ARTIFICIAL_START) && se.getValue().isEmpty()) {
+                return false;
+            }
+        }
+        System.out.println("PREMATURE ABORT");
+        return true;
     }
 
     public int evaluateEscapingEdges(Place candidate) {
@@ -352,25 +363,6 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         return escapingEdges;
     }
 
-    public void checkPrematureAbort(){
-        boolean prematureAbort = true;
-        for(Place p : composition) {
-            if(placeToEscapingEdges.get(p) != 0) {
-                prematureAbort = false;
-                break;
-            }
-        }
-        Set<Map.Entry<Activity, Set<Place>>> s  = activityToIngoingPlaces.entrySet();
-        for(Map.Entry<Activity, Set<Place>> se  : s) {
-            if (!se.getKey().equals(Factory.ARTIFICIAL_START) && se.getValue().isEmpty()) {
-                prematureAbort = false;
-                break;
-            }
-        }
-        if(prematureAbort) {
-            abort = true;
-        }
-    }
 
 
 }
