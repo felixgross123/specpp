@@ -54,6 +54,8 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
     private final Map<Place, Integer> placeToEscapingEdges = new HashMap<>();
 
+    boolean abort = false;
+
 
     public FelixNewPlaceComposer(I composition) {
         super(composition, c -> new CollectionOfPlaces(c.toList()));
@@ -110,6 +112,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
             if (!candidateIsMorePrecise) {
                 // no decrease in EE(p) for any place p that was reevaluated
                 System.out.println("Place " + candidate + " not accepted (no increase in precision)");
+                System.out.println("----------------");
                 return false;
 
             }else{
@@ -152,7 +155,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
                         }
 
                     }
-                    boolean removed = false;
+                    boolean remove = true;
                     for(Place p : placesToReevaluatePPotImpl) {
 
                         int oldScore;
@@ -167,15 +170,16 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
                         System.out.print("Reeval ");
                         int newScore = evaluateEscapingEdges(p);
 
-                        if(oldScore == newScore) {
-                            System.out.println(pPotImpl + " implicit --> remove");
-                            removed = true;
-                            revokeAcceptance(pPotImpl);
+                        if(oldScore < newScore) {
+                            remove = false;
                             break;
                         }
                     }
-                    if(!removed) {
-                        addToActivityPlacesMapping(pPotImpl);
+                    addToActivityPlacesMapping(pPotImpl);
+
+                    if(remove){
+                        revokeAcceptance(pPotImpl);
+                        System.out.println(pPotImpl + " implicit --> remove");
                     }
 
 
@@ -276,6 +280,10 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         }
     }
 
+    @Override
+    public boolean isFinished() {
+        return abort;
+    }
 
     public int evaluateEscapingEdges(Place candidate) {
         int escapingEdges = 0;
@@ -360,10 +368,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
             }
         }
         if(prematureAbort) {
-            System.out.println("---PREMATURE ABORT---");
-            System.out.println();
-            System.out.println();
-            System.out.println();
+            abort = true;
         }
     }
 
