@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="CodeDefinedConfiguration" type="Application" factoryName="Application" nameIsGenerated="true">
-    <option name="MAIN_CLASS_NAME" value="org.processmining.specpp.headless.CodeDefinedConfiguration" />
+    <option name="MAIN_CLASS_NAME" value="org.processmining.specpp.headless.CodeDefinedConfigurationSample" />
     <module name="specpp" />
     <extension name="coverage">
       <pattern>

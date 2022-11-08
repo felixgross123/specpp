@@ -16,7 +16,6 @@ import org.processmining.specpp.orchestra.SPECppOperations;
 import org.processmining.specpp.preprocessing.InputData;
 import org.processmining.specpp.preprocessing.InputDataBundle;
 import org.processmining.specpp.preprocessing.orderings.AverageFirstOccurrenceIndex;
-import org.processmining.specpp.prom.mvc.config.ConfiguratorCollection;
 
 import java.io.*;
 
@@ -31,7 +30,7 @@ public class ProMLessSPECpp {
     }
 
     public static void run(String inputLogPath, String outputPetrinetPath) {
-        run(inputLogPath, outputPetrinetPath, new PreProcessingParameters(new XEventNameClassifier(), false, AverageFirstOccurrenceIndex.class), CodeDefinedConfiguration.createConfiguration());
+        run(inputLogPath, outputPetrinetPath, new PreProcessingParameters(new XEventNameClassifier(), false, AverageFirstOccurrenceIndex.class), CodeDefinedConfigurationSample.createConfiguration());
     }
 
     public static void run(String inputLogPath, String outputPetrinetPath, PreProcessingParameters preProcessingParameters, SPECppConfigBundle configBundle) {

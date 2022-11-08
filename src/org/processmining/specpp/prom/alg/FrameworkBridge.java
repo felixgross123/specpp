@@ -28,7 +28,7 @@ public class FrameworkBridge {
     public static final List<AnnotatedActivityOrderingStrategy> ORDERING_STRATEGIES = Arrays.stream(BridgedActivityOrderingStrategies.values())
                                                                                             .map(BridgedActivityOrderingStrategies::getBridge)
                                                                                             .collect(Collectors.toList());
-    ;
+
     public static final List<AnnotatedTreeHeuristic> HEURISTICS = Arrays.stream(BridgedHeuristics.values())
                                                                         .map(BridgedHeuristics::getBridge)
                                                                         .collect(Collectors.toList());
@@ -43,8 +43,8 @@ public class FrameworkBridge {
 
     public enum BridgedHeuristics {
         PlaceInterestingness(new AnnotatedTreeHeuristic("Place Interestingness", EventuallyFollowsTreeHeuristic.Builder::new)),
-        BFS_Emulation(new AnnotatedTreeHeuristic("BFS Emulation", () -> HeuristicUtils::bfs)),
-        DFS_Emulation(new AnnotatedTreeHeuristic("DFS Emulation", () -> HeuristicUtils::dfs));
+        BFS_Emulation(new AnnotatedTreeHeuristic("BFS Emulation", () -> () -> HeuristicUtils.<PlaceNode>bfs())),
+        DFS_Emulation(new AnnotatedTreeHeuristic("DFS Emulation", () -> () -> HeuristicUtils.<PlaceNode>dfs()));
 
         private final AnnotatedTreeHeuristic bth;
 

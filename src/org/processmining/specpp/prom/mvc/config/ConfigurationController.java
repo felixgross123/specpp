@@ -127,7 +127,7 @@ public class ConfigurationController extends AbstractStageController {
         } else {
             etCfg = new EfficientTreeConfiguration.Configurator<>();
             etCfg.tree(isSupervisingEvents ? EventingEnumeratingTree::new : EnumeratingTree::new);
-            etCfg.expansionStrategy(pc.treeExpansionSetting == ProMConfig.TreeExpansionSetting.BFS ? VariableExpansion::bfs : VariableExpansion::dfs);
+            etCfg.expansionStrategy(pc.treeExpansionSetting == ProMConfig.TreeExpansionSetting.BFS ? () -> VariableExpansion.<PlaceNode>bfs() : () -> VariableExpansion.<PlaceNode>dfs());
             etCfg.childGenerationLogic(new MonotonousPlaceGenerationLogic.Builder());
         }
 
