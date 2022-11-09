@@ -43,7 +43,7 @@ import org.processmining.specpp.util.PublicPaths;
 public class DevelopmentEntryPoint {
 
     public static void main(String[] args) {
-        String path = PublicPaths.SAMPLE_EVENTLOG_LTDEX;
+        String path = PublicPaths.SAMPLE_EVENTLOG_2;
         PreProcessingParameters prePar = new PreProcessingParameters(new XEventNameClassifier(), true, AverageFirstOccurrenceIndex.class);
         InputDataBundle inputData = InputData.loadData(path, prePar).getData();
         SPECppConfigBundle configuration = createConfiguration();

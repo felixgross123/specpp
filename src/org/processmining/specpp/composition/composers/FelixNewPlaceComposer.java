@@ -1,6 +1,5 @@
 package org.processmining.specpp.composition.composers;
 
-import it.unimi.dsi.fastutil.Hash;
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.MapIterator;
 import org.processmining.specpp.base.AdvancedComposition;
@@ -11,12 +10,8 @@ import org.processmining.specpp.componenting.delegators.DelegatingEvaluator;
 import org.processmining.specpp.componenting.evaluation.EvaluationRequirements;
 import org.processmining.specpp.componenting.supervision.SupervisionRequirements;
 import org.processmining.specpp.datastructures.encoding.BitEncodedSet;
-import org.processmining.specpp.datastructures.encoding.BitMask;
-import org.processmining.specpp.datastructures.encoding.IntEncodings;
 import org.processmining.specpp.datastructures.log.impls.Factory;
-import org.processmining.specpp.datastructures.log.impls.VariantImpl;
 import org.processmining.specpp.datastructures.transitionSystems.PAState;
-import org.processmining.specpp.datastructures.transitionSystems.PATransition;
 import org.processmining.specpp.datastructures.transitionSystems.PrefixAutomaton;
 import org.processmining.specpp.datastructures.log.Activity;
 import org.processmining.specpp.datastructures.log.Log;
@@ -24,18 +19,14 @@ import org.processmining.specpp.datastructures.log.impls.IndexedVariant;
 import org.processmining.specpp.datastructures.petri.CollectionOfPlaces;
 import org.processmining.specpp.datastructures.petri.Place;
 import org.processmining.specpp.datastructures.petri.Transition;
-import org.processmining.specpp.datastructures.vectorization.IntVector;
 import org.processmining.specpp.datastructures.vectorization.VariantMarkingHistories;
-import org.processmining.specpp.evaluation.implicitness.BooleanImplicitness;
 import org.processmining.specpp.evaluation.implicitness.ImplicitnessRating;
-import org.processmining.specpp.evaluation.implicitness.LPBasedImplicitnessCalculator;
 import org.processmining.specpp.supervision.EventSupervision;
 import org.processmining.specpp.supervision.observations.DebugEvent;
 import org.processmining.specpp.supervision.piping.PipeWorks;
 
 import java.nio.IntBuffer;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends AbstractComposer<Place, I, CollectionOfPlaces> {
 
@@ -54,7 +45,8 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
     private final Map<Place, Integer> placeToEscapingEdges = new HashMap<>();
 
-    boolean abort = false;
+    private final Set<Place> selfLoopingPlaces = new HashSet<>();
+
 
 
     public FelixNewPlaceComposer(I composition) {
@@ -73,137 +65,145 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
         //eventSupervisor.observe(new DebugEvent("read me"));
 
-
         System.out.println("Evaluating Place " + candidate);
+        //check for self-loops
+        if(candidate.preset().intersects(candidate.postset())) {
 
-        Log log = logSource.getData();
+            selfLoopingPlaces.add(candidate);
+            System.out.println(candidate + " added to List of Self-Looping Places (evaluated later)");
+            return false;
 
-        BitEncodedSet<Transition> candidateOut = candidate.postset();
-        Set<Place> placesToReevaluate = new HashSet<>();
+        }else {
+            System.out.println("Evaluating Place " + candidate);
 
-        for(Transition t: candidate.postset()) {
-            placesToReevaluate.addAll(activityToIngoingPlaces.get(actTransMapping.get().getKey(t)));
-        }
+            Log log = logSource.getData();
 
+            BitEncodedSet<Transition> candidateOut = candidate.postset();
+            Set<Place> placesToReevaluate = new HashSet<>();
 
-
-        if(!placesToReevaluate.isEmpty()) {
-            //
-            Map<Place, Integer> tmpPlaceToEscapingEdges = new HashMap<>();
-
-            boolean candidateIsMorePrecise = false;
-
-            addToActivityPlacesMapping(candidate);
-
-            for(Place p : placesToReevaluate) {
-
-                int oldScore = placeToEscapingEdges.get(p);
-                int newScore = evaluateEscapingEdges(p);
-
-                tmpPlaceToEscapingEdges.put(p, newScore);
-
-                if(oldScore > newScore) {
-                    candidateIsMorePrecise = true;
-                }
+            for (Transition t : candidate.postset()) {
+                placesToReevaluate.addAll(activityToIngoingPlaces.get(actTransMapping.get().getKey(t)));
             }
 
-            removeFromActivityPlacesMapping(candidate);
 
-            if (!candidateIsMorePrecise) {
-                // no decrease in EE(p) for any place p that was reevaluated
-                System.out.println("Place " + candidate + " not accepted (no increase in precision)");
-                System.out.println("----------------");
-                return false;
+            if (!placesToReevaluate.isEmpty()) {
 
-            }else{
+                Map<Place, Integer> tmpPlaceToEscapingEdges = new HashMap<>();
 
-                // candidate place makes the result more precise -> check for potentially implicit places
+                boolean candidateIsMorePrecise = false;
 
-                int candidateScore = evaluateEscapingEdges(candidate);
-
-                LinkedList<Place> potImpl = new LinkedList<>();
-
-                //Note: tmpPlaceEscapingEdgesPairs contains all placesToReevaluate as keys
-                Set<Map.Entry<Place, Integer>> tmpPlaceEscapingEdgesPairs = tmpPlaceToEscapingEdges.entrySet();
-
-                //collect potentiallyImplicitPlaces
-                for(Map.Entry<Place, Integer> e : tmpPlaceEscapingEdgesPairs) {
-                    if(e.getValue().equals(candidateScore)) {
-                        potImpl.add(e.getKey());
-                    }
-                }
-
-                //check implicitness and remove
                 addToActivityPlacesMapping(candidate);
 
-                for(Place pPotImpl : potImpl) {
+                for (Place p : placesToReevaluate) {
 
-                    System.out.println("ImplicitnessCheck: " + pPotImpl);
+                    int oldScore = placeToEscapingEdges.get(p);
+                    int newScore = evaluateEscapingEdges(p);
 
-                    removeFromActivityPlacesMapping(pPotImpl);
+                    tmpPlaceToEscapingEdges.put(p, newScore);
 
-                    BitEncodedSet<Transition> pPotImplOut = pPotImpl.postset();
-                    Set<Place> placesToReevaluatePPotImpl = new HashSet<>();
-
-                    //Collect Places to reevaluate for implicitness check of pPotImpl
-                    for(Transition t: pPotImpl.postset()) {
-                        Set<Place> places = activityToIngoingPlaces.get(actTransMapping.get().getKey(t));
-                        for(Place p : places) {
-                            if(!p.equals(pPotImpl)){
-                                placesToReevaluatePPotImpl.add(p);
-                            }
-                        }
-
+                    if (oldScore > newScore) {
+                        candidateIsMorePrecise = true;
                     }
-                    boolean remove = true;
-                    for(Place p : placesToReevaluatePPotImpl) {
-
-                        int oldScore;
-                        if(p.equals(candidate)){
-                            oldScore = candidateScore;
-                        }else if(tmpPlaceToEscapingEdges.containsKey(p)) {
-                            oldScore = tmpPlaceToEscapingEdges.get(p);
-                        }else {
-                            oldScore = placeToEscapingEdges.get(p);
-                        }
-
-                        System.out.print("Reeval ");
-                        int newScore = evaluateEscapingEdges(p);
-
-                        if(oldScore < newScore) {
-                            remove = false;
-                            break;
-                        }
-                    }
-                    addToActivityPlacesMapping(pPotImpl);
-
-                    if(remove){
-                        revokeAcceptance(pPotImpl);
-                        System.out.println(pPotImpl + " implicit --> remove");
-                    }
-
-
                 }
 
                 removeFromActivityPlacesMapping(candidate);
 
-                //update scores
-                for(Map.Entry<Place, Integer> e : tmpPlaceEscapingEdgesPairs) {
-                    placeToEscapingEdges.put(e.getKey(), e.getValue());
+                if (!candidateIsMorePrecise) {
+                    // no decrease in EE(p) for any place p that was reevaluated
+                    System.out.println("Place " + candidate + " not accepted (no increase in precision)");
+                    System.out.println("----------------");
+                    return false;
+
+                } else {
+
+                    // candidate place makes the result more precise -> check for potentially implicit places
+
+                    int candidateScore = evaluateEscapingEdges(candidate);
+
+                    LinkedList<Place> potImpl = new LinkedList<>();
+
+                    //Note: tmpPlaceEscapingEdgesPairs contains all placesToReevaluate as keys
+                    Set<Map.Entry<Place, Integer>> tmpPlaceEscapingEdgesPairs = tmpPlaceToEscapingEdges.entrySet();
+
+                    //collect potentiallyImplicitPlaces
+                    for (Map.Entry<Place, Integer> e : tmpPlaceEscapingEdgesPairs) {
+                        if (e.getValue().equals(candidateScore)) {
+                            potImpl.add(e.getKey());
+                        }
+                    }
+
+                    //check implicitness and remove
+                    addToActivityPlacesMapping(candidate);
+
+                    for (Place pPotImpl : potImpl) {
+
+                        System.out.println("ImplicitnessCheck: " + pPotImpl);
+
+                        removeFromActivityPlacesMapping(pPotImpl);
+
+                        BitEncodedSet<Transition> pPotImplOut = pPotImpl.postset();
+                        Set<Place> placesToReevaluatePPotImpl = new HashSet<>();
+
+                        //Collect Places to reevaluate for implicitness check of pPotImpl
+                        for (Transition t : pPotImpl.postset()) {
+                            Set<Place> places = activityToIngoingPlaces.get(actTransMapping.get().getKey(t));
+                            for (Place p : places) {
+                                if (!p.equals(pPotImpl)) {
+                                    placesToReevaluatePPotImpl.add(p);
+                                }
+                            }
+
+                        }
+                        boolean remove = true;
+                        for (Place p : placesToReevaluatePPotImpl) {
+
+                            int oldScore;
+                            if (p.equals(candidate)) {
+                                oldScore = candidateScore;
+                            } else if (tmpPlaceToEscapingEdges.containsKey(p)) {
+                                oldScore = tmpPlaceToEscapingEdges.get(p);
+                            } else {
+                                oldScore = placeToEscapingEdges.get(p);
+                            }
+
+                            System.out.print("Reeval ");
+                            int newScore = evaluateEscapingEdges(p);
+
+                            if (oldScore < newScore) {
+                                remove = false;
+                                break;
+                            }
+                        }
+                        addToActivityPlacesMapping(pPotImpl);
+
+                        if (remove) {
+                            revokeAcceptance(pPotImpl);
+                            System.out.println(pPotImpl + " implicit --> remove");
+                        }
+
+
+                    }
+
+                    removeFromActivityPlacesMapping(candidate);
+
+                    //update scores
+                    for (Map.Entry<Place, Integer> e : tmpPlaceEscapingEdgesPairs) {
+                        placeToEscapingEdges.put(e.getKey(), e.getValue());
+                    }
+
+                    placeToEscapingEdges.put(candidate, candidateScore);
+                    System.out.println(candidate + " accepted");
+                    System.out.println("----------------");
+                    return true;
                 }
 
-                placeToEscapingEdges.put(candidate, candidateScore);
-                System.out.println(candidate + " accepted");
+            } else {
+                // no places of composition need to be reevaluated -> insert p, calculate EE(p)
+                placeToEscapingEdges.put(candidate, evaluateEscapingEdges(candidate));
+                System.out.println(candidate + " accepted (postset empty)");
                 System.out.println("----------------");
                 return true;
             }
-
-        } else {
-            // no places of composition need to be reevaluated -> insert p, calculate EE(p)
-            placeToEscapingEdges.put(candidate, evaluateEscapingEdges(candidate));
-            System.out.println(candidate + " accepted (postset empty)");
-            System.out.println("----------------");
-            return true;
         }
     }
 
@@ -212,14 +212,16 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
         //update ActivityPlaceMapping
         removeFromActivityPlacesMapping(candidate);
+        //update PlaceToEE
+        placeToEscapingEdges.remove(candidate);
+
+
     }
 
     @Override
     protected void candidateAccepted(Place candidate) {
-
         //update ActivityPlaceMapping
         addToActivityPlacesMapping(candidate);
-
     }
 
     @Override
@@ -229,6 +231,28 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
     @Override
     public void candidatesAreExhausted() {
+        System.out.println("--- ADDING SELF-LOOPS ----");
+        //evaluate self-looping places
+        for(Place pSelf : selfLoopingPlaces) {
+            BitEncodedSet <Transition> presetCopy = pSelf.preset().copy();
+            BitEncodedSet <Transition> postsetCopy = pSelf.postset().copy();
+
+            BitEncodedSet <Transition> selfLoopingTransitions = pSelf.preset().copy();
+            selfLoopingTransitions.intersection(pSelf.postset());
+
+            presetCopy.setminus(selfLoopingTransitions);
+            postsetCopy.setminus(selfLoopingTransitions);
+
+            Place pWithoutSelf = new Place(presetCopy, postsetCopy);
+
+            for(Place p: composition) {
+                if(p.equals(pWithoutSelf)) {
+                    composition.accept(pSelf);
+                    System.out.println("added " + p);
+                    break;
+                }
+            }
+        }
 
     }
 
@@ -279,6 +303,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         }
     }
 
+
     @Override
     public boolean isFinished() {
         for(Place p : composition) {
@@ -291,75 +316,69 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
             if (!se.getKey().equals(Factory.ARTIFICIAL_START) && se.getValue().isEmpty()) {
                 return false;
             }
-        }
-        System.out.println("PREMATURE ABORT");
+        };
+        System.out.println("PREMETURE ABORT");
         return true;
     }
 
     public int evaluateEscapingEdges(Place candidate) {
+
         int escapingEdges = 0;
 
-        if(!candidate.postset().isEmpty()) {
+        for(Transition t : candidate.postset()) {
 
-            for(Transition t : candidate.postset()) {
+            Activity o = actTransMapping.get().getKey(t);
 
-                Activity o = actTransMapping.get().getKey(t);
+            Set<Place> prerequisites = activityToIngoingPlaces.get(o);
 
-                Set<Place> prerequisites = activityToIngoingPlaces.get(o);
+            // Collect MarkingHistories
+            LinkedList<VariantMarkingHistories> markingHistories = new LinkedList<>();
+            for(Place p : prerequisites) {
+                markingHistories.add(markingHistoriesEvaluator.eval(p));
+            }
+            markingHistories.add(markingHistoriesEvaluator.eval(candidate));
 
-                // Collect MarkingHistories
-                LinkedList<VariantMarkingHistories> markingHistories = new LinkedList<>();
-                for(Place p : prerequisites) {
-                    markingHistories.add(markingHistoriesEvaluator.eval(p));
-                }
-                markingHistories.add(markingHistoriesEvaluator.eval(candidate));
+            //check if o is escaping
+            Log log = logSource.getData();
 
-                //check if o is escaping
-                Log log = logSource.getData();
+            for(IndexedVariant variant : log) {
 
-                for(IndexedVariant variant : log) {
+                int vIndex = variant.getIndex();
+                int length = variant.getVariant().getLength();
 
-                    int vIndex = variant.getIndex();
-                    int length = variant.getVariant().getLength();
-
-                    PAState logState = prefixAutomaton.getInitial();
+                PAState logState = prefixAutomaton.getInitial();
 
 
-                    for(int j = 1; j < length*2; j+=2) {
-                        int aIndex = ((j+1)/2)-1;
+                for(int j = 1; j < length*2; j+=2) {
+                    int aIndex = ((j+1)/2)-1;
 
-                        // update log state, safe potFrequency
-                        // TODO: what if not perfectly fitting?
-                        logState = logState.getTrans(log.getVariant(vIndex).getAt(aIndex)).getPointer();
+                    // update log state
+                    logState = logState.getTrans(log.getVariant(vIndex).getAt(aIndex)).getPointer();
 
-                        boolean isAllowedO = true;
-                        for(VariantMarkingHistories h : markingHistories) {
-                            //check if column = 1 f.a. p in prerequites
-                            // TODO: why does .getAt() always return vector of first variant (Index 0)?
-                            // TODO: multiple tokens in all prereq -> multiply with |token| for EE(p)?
+                    boolean isAllowedO = true;
+                    for(VariantMarkingHistories h : markingHistories) {
+                        //check if column = 1 f.a. p in prerequites
+                        // TODO: multiple tokens in all prereq -> multiply with |token| for EE(p)?
 
-                            IntBuffer buffer = h.getAt(vIndex);
-                            int p = buffer.position();
+                        IntBuffer buffer = h.getAt(vIndex);
+                        int p = buffer.position();
 
-                            if(buffer.get(p+j) == 0) {
-                                isAllowedO = false;
-                                break;
-                            }
+                        if(buffer.get(p+j) == 0) {
+                            isAllowedO = false;
+                            break;
                         }
+                    }
 
-                        if(isAllowedO) {
-                            if(!logState.checkForOutgoingAct(o)) {
-                                //o is not reflected, hence escaping
-                                escapingEdges += log.getVariantFrequency(vIndex);
-                            }
+                    if(isAllowedO) {
+                        if(!logState.checkForOutgoingAct(o)) {
+                            //o is not reflected, hence escaping
+                            escapingEdges += log.getVariantFrequency(vIndex);
                         }
                     }
                 }
             }
-            System.out.println("EE(" + candidate + ")= " + escapingEdges);
-            return escapingEdges;
         }
-
+        System.out.println("EE(" + candidate + ")= " + escapingEdges);
         return escapingEdges;
     }
 
