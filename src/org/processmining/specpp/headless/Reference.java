@@ -47,8 +47,8 @@ import org.processmining.specpp.util.PublicPaths;
 public class Reference {
 
     public static void main(String[] args) {
-        String path = PublicPaths.SAMPLE_EVENTLOG_2;
-        PreProcessingParameters prePar = new PreProcessingParameters(new XEventNameClassifier(), true, AverageTraceOccurrence.class);;
+        String path = PublicPaths.REALLIFE_SEPSIS;
+        PreProcessingParameters prePar = new PreProcessingParameters(new XEventNameClassifier(), true, AverageFirstOccurrenceIndex.class);;
         DataSource<InputDataBundle> dataSource = InputData.loadData(path, prePar);
         ConfiguratorCollection configuration = Reference.createConfiguration();
         SPECppOperations.configureAndExecute(configuration, dataSource.getData(), false);

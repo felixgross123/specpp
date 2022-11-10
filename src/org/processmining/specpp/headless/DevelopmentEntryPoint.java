@@ -43,7 +43,7 @@ import org.processmining.specpp.util.PublicPaths;
 public class DevelopmentEntryPoint {
 
     public static void main(String[] args) {
-        String path = PublicPaths.SAMPLE_EVENTLOG_2;
+        String path = PublicPaths.REALLIFE_RTFM;
         PreProcessingParameters prePar = new PreProcessingParameters(new XEventNameClassifier(), true, AverageFirstOccurrenceIndex.class);
         InputDataBundle inputData = InputData.loadData(path, prePar).getData();
         SPECppConfigBundle configuration = createConfiguration();
@@ -86,9 +86,10 @@ public class DevelopmentEntryPoint {
 
         PostProcessingConfiguration.Configurator<CollectionOfPlaces, CollectionOfPlaces> temp_ppConfig = Configurators.postProcessing();
         // ppConfig.processor(SelfLoopPlaceMerger::new);
+
         temp_ppConfig
-        // .addPostProcessor(new ReplayBasedImplicitnessPostProcessing.Builder())
-                    // .addPostProcessor(new LPBasedImplicitnessPostProcessing.Builder())
+         //.addPostProcessor(new ReplayBasedImplicitnessPostProcessing.Builder())
+           //          .addPostProcessor(new LPBasedImplicitnessPostProcessing.Builder())
                     .addPostProcessor(SelfLoopPlaceMerger::new);
         PostProcessingConfiguration.Configurator<CollectionOfPlaces, ProMPetrinetWrapper> ppConfig = temp_ppConfig.addPostProcessor(ProMConverter::new);
 

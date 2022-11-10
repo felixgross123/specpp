@@ -65,16 +65,16 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
         //eventSupervisor.observe(new DebugEvent("read me"));
 
-        System.out.println("Evaluating Place " + candidate);
+        //System.out.println("Evaluating Place " + candidate);
         //check for self-loops
         if(candidate.preset().intersects(candidate.postset())) {
 
             selfLoopingPlaces.add(candidate);
-            System.out.println(candidate + " added to List of Self-Looping Places (evaluated later)");
+            //System.out.println(candidate + " added to List of Self-Looping Places (evaluated later)");
             return false;
 
         }else {
-            System.out.println("Evaluating Place " + candidate);
+            //System.out.println("Evaluating Place " + candidate);
 
             Log log = logSource.getData();
 
@@ -110,8 +110,8 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
                 if (!candidateIsMorePrecise) {
                     // no decrease in EE(p) for any place p that was reevaluated
-                    System.out.println("Place " + candidate + " not accepted (no increase in precision)");
-                    System.out.println("----------------");
+                    //System.out.println("Place " + candidate + " not accepted (no increase in precision)");
+                    //System.out.println("----------------");
                     return false;
 
                 } else {
@@ -127,17 +127,18 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
                     //collect potentiallyImplicitPlaces
                     for (Map.Entry<Place, Integer> e : tmpPlaceEscapingEdgesPairs) {
-                        if (e.getValue().equals(candidateScore)) {
+                        if (e.getValue() <= candidateScore) {
                             potImpl.add(e.getKey());
                         }
                     }
 
                     //check implicitness and remove
                     addToActivityPlacesMapping(candidate);
+                    List<Place> implicitRemoved = new LinkedList<>();
 
                     for (Place pPotImpl : potImpl) {
 
-                        System.out.println("ImplicitnessCheck: " + pPotImpl);
+                        //System.out.println("ImplicitnessCheck: " + pPotImpl);
 
                         removeFromActivityPlacesMapping(pPotImpl);
 
@@ -155,6 +156,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
                         }
                         boolean remove = true;
+
                         for (Place p : placesToReevaluatePPotImpl) {
 
                             int oldScore;
@@ -166,7 +168,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
                                 oldScore = placeToEscapingEdges.get(p);
                             }
 
-                            System.out.print("Reeval ");
+                            //System.out.print("Reeval ");
                             int newScore = evaluateEscapingEdges(p);
 
                             if (oldScore < newScore) {
@@ -178,7 +180,8 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
                         if (remove) {
                             revokeAcceptance(pPotImpl);
-                            System.out.println(pPotImpl + " implicit --> remove");
+                            tmpPlaceToEscapingEdges.remove(pPotImpl);
+                            //System.out.println(pPotImpl + " implicit --> remove");
                         }
 
 
@@ -186,22 +189,23 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
                     removeFromActivityPlacesMapping(candidate);
 
+                    tmpPlaceEscapingEdgesPairs = tmpPlaceToEscapingEdges.entrySet();
                     //update scores
                     for (Map.Entry<Place, Integer> e : tmpPlaceEscapingEdgesPairs) {
                         placeToEscapingEdges.put(e.getKey(), e.getValue());
                     }
 
                     placeToEscapingEdges.put(candidate, candidateScore);
-                    System.out.println(candidate + " accepted");
-                    System.out.println("----------------");
+                    //System.out.println(candidate + " accepted");
+                    //System.out.println("----------------");
                     return true;
                 }
 
             } else {
                 // no places of composition need to be reevaluated -> insert p, calculate EE(p)
                 placeToEscapingEdges.put(candidate, evaluateEscapingEdges(candidate));
-                System.out.println(candidate + " accepted (postset empty)");
-                System.out.println("----------------");
+                //System.out.println(candidate + " accepted (postset empty)");
+                //System.out.println("----------------");
                 return true;
             }
         }
@@ -229,9 +233,10 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
     }
 
+
     @Override
     public void candidatesAreExhausted() {
-        System.out.println("--- ADDING SELF-LOOPS ----");
+        //System.out.println("--- ADDING SELF-LOOPS ----");
         //evaluate self-looping places
         for(Place pSelf : selfLoopingPlaces) {
             BitEncodedSet <Transition> presetCopy = pSelf.preset().copy();
@@ -247,8 +252,9 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
             for(Place p: composition) {
                 if(p.equals(pWithoutSelf)) {
+                    // composition.remove(p); TODO: A.t.m. Let Self-Loop-Merger Handle Merging places
                     composition.accept(pSelf);
-                    System.out.println("added " + p);
+                    //System.out.println("added " + p);
                     break;
                 }
             }
@@ -317,7 +323,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
                 return false;
             }
         };
-        System.out.println("PREMETURE ABORT");
+        //System.out.println("PREMETURE ABORT");
         return true;
     }
 
@@ -378,7 +384,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
                 }
             }
         }
-        System.out.println("EE(" + candidate + ")= " + escapingEdges);
+        //System.out.println("EE(" + candidate + ")= " + escapingEdges);
         return escapingEdges;
     }
 
