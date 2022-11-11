@@ -6,6 +6,7 @@ import org.processmining.specpp.componenting.data.ParameterRequirements;
 import org.processmining.specpp.componenting.evaluation.EvaluatorConfiguration;
 import org.processmining.specpp.composition.StatefulPlaceComposition;
 import org.processmining.specpp.composition.composers.FelixNewPlaceComposer;
+import org.processmining.specpp.composition.composers.FelixNewPlaceComposer1;
 import org.processmining.specpp.composition.composers.PlaceFitnessFilter;
 import org.processmining.specpp.config.*;
 import org.processmining.specpp.config.parameters.ParameterProvider;
@@ -45,7 +46,7 @@ import org.processmining.specpp.util.PublicPaths;
 public class DevelopmentEntryPoint {
 
     public static void main(String[] args) {
-        String path = PublicPaths.REALLIFE_RTFM;
+        String path = PublicPaths.SAMPLE_EVENTLOG_2;
         PreProcessingParameters prePar = new PreProcessingParameters(new XEventNameClassifier(), true, AverageFirstOccurrenceIndex.class);
         InputDataBundle inputData = InputData.loadData(path, prePar).getData();
         SPECppConfigBundle configuration = createConfiguration();
@@ -79,7 +80,7 @@ public class DevelopmentEntryPoint {
                                                                                                                                   .composition(StatefulPlaceComposition::new)
                                                                                                                                   .proposer(new ConstrainablePlaceProposer.Builder());
 
-        pcConfig.terminalComposer(FelixNewPlaceComposer::new);
+        pcConfig.terminalComposer(FelixNewPlaceComposer1::new);
         // PlaceAccepter oder CIPR
 
         pcConfig.composerChain(PlaceFitnessFilter::new);
@@ -91,7 +92,7 @@ public class DevelopmentEntryPoint {
 
         temp_ppConfig
          //.addPostProcessor(new ReplayBasedImplicitnessPostProcessing.Builder())
-                    .addPostProcessor(new LPBasedImplicitnessPostProcessing.Builder())
+                   // .addPostProcessor(new LPBasedImplicitnessPostProcessing.Builder())
                     .addPostProcessor(SelfLoopPlaceMerger::new);
         PostProcessingConfiguration.Configurator<CollectionOfPlaces, ProMPetrinetWrapper> ppConfig = temp_ppConfig.addPostProcessor(ProMConverter::new);
 
@@ -103,7 +104,7 @@ public class DevelopmentEntryPoint {
                 globalComponentSystem().provide(ParameterRequirements.IMPLICITNESS_TESTING.fulfilWithStatic(new ImplicitnessTestingParameters(ImplicitnessTestingParameters.CIPRVersion.ReplayBased, ImplicitnessTestingParameters.SubLogRestriction.None)))
                                        .provide(ParameterRequirements.PLACE_GENERATOR_PARAMETERS.fulfilWithStatic(new PlaceGeneratorParameters(Integer.MAX_VALUE, true, false, false, false)))
                                        .provide(ParameterRequirements.SUPERVISION_PARAMETERS.fulfilWithStatic(SupervisionParameters.instrumentNone(true, false)))
-                        .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(0.7)));
+                        .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(1)));
             }
         };
 
