@@ -31,7 +31,9 @@ import org.processmining.specpp.postprocessing.*;
 import org.processmining.specpp.preprocessing.InputData;
 import org.processmining.specpp.preprocessing.InputDataBundle;
 import org.processmining.specpp.preprocessing.orderings.AbsoluteActivityFrequency;
+import org.processmining.specpp.preprocessing.orderings.AbsoluteTraceFrequency;
 import org.processmining.specpp.preprocessing.orderings.AverageFirstOccurrenceIndex;
+import org.processmining.specpp.preprocessing.orderings.AverageTraceOccurrence;
 import org.processmining.specpp.prom.mvc.config.ConfiguratorCollection;
 import org.processmining.specpp.proposal.ConstrainablePlaceProposer;
 import org.processmining.specpp.supervision.supervisors.BaseSupervisor;
@@ -89,7 +91,7 @@ public class DevelopmentEntryPoint {
 
         temp_ppConfig
          //.addPostProcessor(new ReplayBasedImplicitnessPostProcessing.Builder())
-           //          .addPostProcessor(new LPBasedImplicitnessPostProcessing.Builder())
+                    .addPostProcessor(new LPBasedImplicitnessPostProcessing.Builder())
                     .addPostProcessor(SelfLoopPlaceMerger::new);
         PostProcessingConfiguration.Configurator<CollectionOfPlaces, ProMPetrinetWrapper> ppConfig = temp_ppConfig.addPostProcessor(ProMConverter::new);
 
@@ -101,7 +103,7 @@ public class DevelopmentEntryPoint {
                 globalComponentSystem().provide(ParameterRequirements.IMPLICITNESS_TESTING.fulfilWithStatic(new ImplicitnessTestingParameters(ImplicitnessTestingParameters.CIPRVersion.ReplayBased, ImplicitnessTestingParameters.SubLogRestriction.None)))
                                        .provide(ParameterRequirements.PLACE_GENERATOR_PARAMETERS.fulfilWithStatic(new PlaceGeneratorParameters(Integer.MAX_VALUE, true, false, false, false)))
                                        .provide(ParameterRequirements.SUPERVISION_PARAMETERS.fulfilWithStatic(SupervisionParameters.instrumentNone(true, false)))
-                        .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(1.0)));
+                        .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(0.7)));
             }
         };
 

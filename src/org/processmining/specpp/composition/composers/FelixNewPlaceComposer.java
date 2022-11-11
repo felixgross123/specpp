@@ -59,18 +59,41 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     }
 
 
-    int i=0;
+    boolean selfloopconfig = false;
     @Override
     protected boolean deliberateAcceptance(Place candidate) {
 
         //eventSupervisor.observe(new DebugEvent("read me"));
 
-        //System.out.println("Evaluating Place " + candidate);
-        //check for self-loops
-        if(candidate.preset().intersects(candidate.postset())) {
 
-            selfLoopingPlaces.add(candidate);
-            //System.out.println(candidate + " added to List of Self-Looping Places (evaluated later)");
+        //check for self-loops
+        if(candidate.preset().intersects(candidate.postset()) && selfloopconfig) {
+
+            //System.out.println("Evaluating Place " + candidate);
+
+            BitEncodedSet <Transition> presetCopy = candidate.preset().copy();
+            BitEncodedSet <Transition> postsetCopy = candidate.postset().copy();
+
+            BitEncodedSet <Transition> selfLoopingTransitions = candidate.preset().copy();
+            selfLoopingTransitions.intersection(candidate.postset());
+
+            presetCopy.setminus(selfLoopingTransitions);
+            postsetCopy.setminus(selfLoopingTransitions);
+
+            Place pWithoutSelf = new Place(presetCopy, postsetCopy);
+
+            boolean containsPWithoutSelf = false;
+            for(Place p: composition) {
+                if(p.equals(pWithoutSelf)) {
+                    //System.out.println("added " + candidate + " (self-loop)");
+                    //System.out.println("----------------");
+                    placeToEscapingEdges.put(candidate, evaluateEscapingEdges(candidate));
+                    return true;
+                }
+            }
+
+            //System.out.println("rejected " + candidate + " (self-loop)");
+            //System.out.println("----------------");
             return false;
 
         }else {
@@ -236,29 +259,6 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
     @Override
     public void candidatesAreExhausted() {
-        //System.out.println("--- ADDING SELF-LOOPS ----");
-        //evaluate self-looping places
-        for(Place pSelf : selfLoopingPlaces) {
-            BitEncodedSet <Transition> presetCopy = pSelf.preset().copy();
-            BitEncodedSet <Transition> postsetCopy = pSelf.postset().copy();
-
-            BitEncodedSet <Transition> selfLoopingTransitions = pSelf.preset().copy();
-            selfLoopingTransitions.intersection(pSelf.postset());
-
-            presetCopy.setminus(selfLoopingTransitions);
-            postsetCopy.setminus(selfLoopingTransitions);
-
-            Place pWithoutSelf = new Place(presetCopy, postsetCopy);
-
-            for(Place p: composition) {
-                if(p.equals(pWithoutSelf)) {
-                    // composition.remove(p); TODO: A.t.m. Let Self-Loop-Merger Handle Merging places
-                    composition.accept(pSelf);
-                    //System.out.println("added " + p);
-                    break;
-                }
-            }
-        }
 
     }
 
