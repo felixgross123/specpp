@@ -8,7 +8,6 @@ import org.processmining.specpp.componenting.evaluation.EvaluatorConfiguration;
 import org.processmining.specpp.composition.ConstrainingPlaceCollection;
 import org.processmining.specpp.composition.StatefulPlaceComposition;
 import org.processmining.specpp.composition.composers.PlaceAccepter;
-import org.processmining.specpp.composition.composers.PlaceComposerWithCIPR;
 import org.processmining.specpp.composition.composers.PlaceFitnessFilter;
 import org.processmining.specpp.config.*;
 import org.processmining.specpp.config.parameters.ParameterProvider;
@@ -32,11 +31,10 @@ import org.processmining.specpp.orchestra.PreProcessingParameters;
 import org.processmining.specpp.orchestra.SPECppOperations;
 import org.processmining.specpp.postprocessing.LPBasedImplicitnessPostProcessing;
 import org.processmining.specpp.postprocessing.ProMConverter;
-import org.processmining.specpp.postprocessing.ReplayBasedImplicitnessPostProcessing;
 import org.processmining.specpp.postprocessing.SelfLoopPlaceMerger;
 import org.processmining.specpp.preprocessing.InputData;
 import org.processmining.specpp.preprocessing.InputDataBundle;
-import org.processmining.specpp.preprocessing.orderings.*;
+import org.processmining.specpp.preprocessing.orderings.AverageFirstOccurrenceIndex;
 import org.processmining.specpp.prom.mvc.config.ConfiguratorCollection;
 import org.processmining.specpp.proposal.ConstrainablePlaceProposer;
 import org.processmining.specpp.supervision.supervisors.AltEventCountsSupervisor;
@@ -45,13 +43,13 @@ import org.processmining.specpp.supervision.supervisors.PerformanceSupervisor;
 import org.processmining.specpp.supervision.supervisors.TerminalSupervisor;
 import org.processmining.specpp.util.PublicPaths;
 
-public class Reference {
+public class Reference_TauLessThan1 {
 
     public static void main(String[] args) {
         String path = PublicPaths.REALLIFE_RTFM;
         PreProcessingParameters prePar = new PreProcessingParameters(new XEventNameClassifier(), true, AverageFirstOccurrenceIndex.class);;
         DataSource<InputDataBundle> dataSource = InputData.loadData(path, prePar);
-        ConfiguratorCollection configuration = Reference.createConfiguration();
+        ConfiguratorCollection configuration = Reference_TauLessThan1.createConfiguration();
         SPECppOperations.configureAndExecute(configuration, dataSource.getData(), false);
     }
 
@@ -88,9 +86,9 @@ public class Reference {
                 .nestedComposition(StatefulPlaceComposition::new, ConstrainingPlaceCollection::new)
                 .proposer(new ConstrainablePlaceProposer.Builder());
 
-        pcConfig.terminalComposer(PlaceComposerWithCIPR::new);
+        //pcConfig.terminalComposer(PlaceComposerWithCIPR::new);
         //without concurrent implicit place removal
-        //pcConfig.terminalComposer(PlaceAccepter::new);
+        pcConfig.terminalComposer(PlaceAccepter::new);
 
         pcConfig.composerChain(PlaceFitnessFilter::new);
         // pcConfig.composerChain(PlaceFitnessFilter::new, UniwiredComposer::new);
@@ -101,7 +99,7 @@ public class Reference {
         PostProcessingConfiguration.Configurator<CollectionOfPlaces, CollectionOfPlaces> temp_ppConfig = Configurators.postProcessing();
         // ppConfig.processor(new UniwiredSelfLoopAdditionPostProcessing.Builder());
         // ppConfig.processor(SelfLoopPlaceMerger::new);
-        temp_ppConfig.addPostProcessor(new ReplayBasedImplicitnessPostProcessing.Builder())
+        temp_ppConfig//.addPostProcessor(new ReplayBasedImplicitnessPostProcessing.Builder())
                 .addPostProcessor(new LPBasedImplicitnessPostProcessing.Builder())
                 .addPostProcessor(SelfLoopPlaceMerger::new);
         PostProcessingConfiguration.Configurator<CollectionOfPlaces, ProMPetrinetWrapper> ppConfig = temp_ppConfig.addPostProcessor(ProMConverter::new);
@@ -115,7 +113,7 @@ public class Reference {
                         //.provide(ParameterRequirements.DELTA_PARAMETERS.fulfilWithStatic(DeltaParameters.delta(0.75)))
                         .provide(ParameterRequirements.PLACE_GENERATOR_PARAMETERS.fulfilWithStatic(new PlaceGeneratorParameters(4, true, false, false, false)))
                         .provide(ParameterRequirements.SUPERVISION_PARAMETERS.fulfilWithStatic(SupervisionParameters.instrumentNone(false, false)))
-                        .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(1)));;
+                        .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(0.9)));;
             }
         };
 
