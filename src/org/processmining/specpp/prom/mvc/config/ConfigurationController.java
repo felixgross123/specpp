@@ -86,12 +86,19 @@ public class ConfigurationController extends AbstractStageController {
                 pcCfg.nestedComposition(LightweightPlaceComposition::new, ConstrainingPlaceCollection::new);
             else pcCfg.composition(LightweightPlaceComposition::new);
         }
-        if (pc.ciprVariant != ProMConfig.CIPRVariant.None)
-            pcCfg.terminalComposer(isSupervisingEvents ? EventingPlaceComposerWithCIPR::new : PlaceComposerWithCIPR::new);
-        else pcCfg.terminalComposer(PlaceAccepter::new);
+
+        if (pc.compositionStrategy == ProMConfig.CompositionStrategy.Felix)
+            pcCfg.terminalComposer(FelixNewPlaceComposer::new);
+        else {
+            if (pc.ciprVariant != ProMConfig.CIPRVariant.None)
+                pcCfg.terminalComposer(isSupervisingEvents ? EventingPlaceComposerWithCIPR::new : PlaceComposerWithCIPR::new);
+            else pcCfg.terminalComposer(PlaceAccepter::new);
+        }
+
         InitializingBuilder<? extends ComposerComponent<Place, AdvancedComposition<Place>, CollectionOfPlaces>, ComposerComponent<Place, AdvancedComposition<Place>, CollectionOfPlaces>> fitnessFilterBuilder = isSupervisingEvents ? EventingPlaceFitnessFilter::new : PlaceFitnessFilter::new;
         switch (pc.compositionStrategy) {
             case Standard:
+            case Felix:
                 pcCfg.composerChain(fitnessFilterBuilder);
                 break;
             case TauDelta:
