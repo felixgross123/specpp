@@ -46,7 +46,7 @@ import org.processmining.specpp.util.PublicPaths;
 public class Reference_TauLessThan1 {
 
     public static void main(String[] args) {
-        String path = PublicPaths.REALLIFE_RTFM;
+        String path = PublicPaths.SAMPLE_EVENTLOG_2;
         PreProcessingParameters prePar = new PreProcessingParameters(new XEventNameClassifier(), true, AverageFirstOccurrenceIndex.class);;
         DataSource<InputDataBundle> dataSource = InputData.loadData(path, prePar);
         ConfiguratorCollection configuration = Reference_TauLessThan1.createConfiguration();
@@ -111,9 +111,9 @@ public class Reference_TauLessThan1 {
             public void init() {
                 globalComponentSystem()
                         //.provide(ParameterRequirements.DELTA_PARAMETERS.fulfilWithStatic(DeltaParameters.delta(0.75)))
-                        .provide(ParameterRequirements.PLACE_GENERATOR_PARAMETERS.fulfilWithStatic(new PlaceGeneratorParameters(4, true, false, false, false)))
+                        .provide(ParameterRequirements.PLACE_GENERATOR_PARAMETERS.fulfilWithStatic(new PlaceGeneratorParameters(6, true, false, false, false)))
                         .provide(ParameterRequirements.SUPERVISION_PARAMETERS.fulfilWithStatic(SupervisionParameters.instrumentNone(false, false)))
-                        .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(0.9)));;
+                        .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(0.7)));;
             }
         };
 

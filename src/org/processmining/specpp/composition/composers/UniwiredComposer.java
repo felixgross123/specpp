@@ -1,5 +1,6 @@
 package org.processmining.specpp.composition.composers;
 
+import org.apache.commons.collections4.BidiMap;
 import org.processmining.specpp.base.AdvancedComposition;
 import org.processmining.specpp.base.Result;
 import org.processmining.specpp.base.impls.AbstractPostponingComposer;
@@ -11,6 +12,7 @@ import org.processmining.specpp.componenting.delegators.DelegatingObserver;
 import org.processmining.specpp.componenting.supervision.SupervisionRequirements;
 import org.processmining.specpp.componenting.system.link.ComposerComponent;
 import org.processmining.specpp.datastructures.encoding.IntEncodings;
+import org.processmining.specpp.datastructures.log.Activity;
 import org.processmining.specpp.datastructures.petri.Place;
 import org.processmining.specpp.datastructures.petri.Transition;
 import org.processmining.specpp.datastructures.tree.base.HeuristicStrategy;
@@ -29,6 +31,7 @@ public class UniwiredComposer<I extends AdvancedComposition<Place>, R extends Re
     protected final ArrayList<Place> collectedPlaces;
     protected final DelegatingObserver<ProposerSignal> proposerSignalsIn = new DelegatingObserver<>();
     protected final DelegatingDataSource<IntEncodings<Transition>> transitionEncodings = new DelegatingDataSource<>();
+
     protected final DelegatingDataSource<HeuristicStrategy<Place, CandidateScore>> orderingHeuristic = new DelegatingDataSource<>();
     protected UnWiringMatrix wiringMatrix;
     protected int currentTreeLevel;

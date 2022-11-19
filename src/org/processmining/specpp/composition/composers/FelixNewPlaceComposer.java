@@ -72,40 +72,6 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         if (!checkPrecisionGain(candidate)) {
             // no decrease in EE(a) for any activity a that was reevaluated
 
-            //begin swap multiple simpler places for complex
-
-            LinkedList<Place> potImpl = new LinkedList<>();
-
-            BitEncodedSet<Transition> candidateOut = candidate.postset();
-            Set<Activity> activitiesToRevealuate = new HashSet<>();
-            for (Transition t: candidateOut) {
-                activitiesToRevealuate.add(actTransMapping.getData().getKey(t));
-            }
-            for(Activity a : activitiesToRevealuate){
-                potImpl.addAll(activityToIngoingPlaces.get(a));
-            }
-            Set<Place> impl = new HashSet<>();
-
-            addToActivityPlacesMapping(candidate);
-
-            for (Place p : potImpl) {
-                if (checkImplicitness(p)) {
-                    impl.add(p);
-                }
-            }
-
-            removeFromActivityPlacesMapping(candidate);
-
-            if(impl.size() > 1) {
-                for (Place p : impl) {
-                    revokeAcceptance(p);
-                }
-                return true;
-            }
-
-            //end swap multiple simpler places for complex
-
-
             //System.out.println("Place " + candidate + " not accepted (no increase in precision)");
             //System.out.println("----------------");
             return false;
@@ -244,11 +210,10 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     protected void initSelf() {
 
         currentLevel = 2;
-        System.out.println("Level: " + currentLevel);
 
         // Build Prefix-Automaton
         Log log = logSource.getData();
-        for (IndexedVariant indexedVariant : log) {
+        for(IndexedVariant indexedVariant : log) {
             prefixAutomaton.addVariant(indexedVariant.getVariant());
         }
 
@@ -291,14 +256,16 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     public boolean isFinished() {
 
         if(levelChange) {
-            System.out.println("Level: " + currentLevel);
             //check if place was added on previous level
+            /*
             if(!foundOnCurrentLevel) {
-                System.out.println("PREMATURE ABORT (no place found on level) " + (currentLevel-1));
+                System.out.println("PREMATURE ABORT no place found on level " + (currentLevel-1));
                 return true;
             }
             foundOnCurrentLevel = false;
             levelChange = false;
+
+             */
 
             //check if optimal precision is reached
             for(int i : activityToEscapingEdges.values()) {
@@ -307,7 +274,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
                 }
             }
 
-            System.out.println("PREMATURE ABORT (optimal precision reached)");
+            System.out.println("PREMATURE ABORT optimal precision reached on Level" + (currentLevel-1));
             return true;
         }
         return false;
@@ -331,7 +298,8 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
                 }
             }
 
-        }else{
+        } else {
+
             Set<Place> prerequisites = activityToIngoingPlaces.get(a);
 
             // collect markingHistories
@@ -358,18 +326,18 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
                     boolean isAllowedO = true;
 
-                    for (VariantMarkingHistories h : markingHistories) {
+                    for(VariantMarkingHistories h : markingHistories) {
                         //check if column = 1 f.a. p in prerequites --> activity a is allowed
                         IntBuffer buffer = h.getAt(vIndex);
                         int p = buffer.position();
 
-                        if (buffer.get(p + j) == 0) {
+                        if(buffer.get(p + j) == 0) {
                             isAllowedO = false;
                             break;
                         }
                     }
 
-                    if (isAllowedO) {
+                    if(isAllowedO) {
                         //check if a is reflected
 
                         if (!logState.checkForOutgoingAct(a)) {
