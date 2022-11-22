@@ -5,10 +5,13 @@ import org.apache.commons.collections4.MapIterator;
 import org.processmining.specpp.base.AdvancedComposition;
 import org.processmining.specpp.base.impls.AbstractComposer;
 import org.processmining.specpp.componenting.data.DataRequirements;
+import org.processmining.specpp.componenting.data.ParameterRequirements;
 import org.processmining.specpp.componenting.delegators.DelegatingDataSource;
 import org.processmining.specpp.componenting.delegators.DelegatingEvaluator;
 import org.processmining.specpp.componenting.evaluation.EvaluationRequirements;
 import org.processmining.specpp.componenting.supervision.SupervisionRequirements;
+import org.processmining.specpp.config.parameters.PrecisionThreshold;
+import org.processmining.specpp.config.parameters.TauFitnessThresholds;
 import org.processmining.specpp.datastructures.encoding.BitEncodedSet;
 import org.processmining.specpp.datastructures.log.Activity;
 import org.processmining.specpp.datastructures.log.Log;
@@ -37,7 +40,8 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     private final DelegatingEvaluator<Place, ImplicitnessRating> implicitnessEvaluator = new DelegatingEvaluator<>();
     private final DelegatingEvaluator<Place, VariantMarkingHistories> markingHistoriesEvaluator = new DelegatingEvaluator<>();
     private final EventSupervision<DebugEvent> eventSupervisor = PipeWorks.eventSupervision();
-    
+
+    private final DelegatingDataSource<PrecisionThreshold> precisionThreshold = new DelegatingDataSource<>();
 
     private final PrefixAutomaton prefixAutomaton = new PrefixAutomaton(new PAState());
     private final Map<Activity, Set<Place>> activityToIngoingPlaces = new HashMap<>();
@@ -45,7 +49,6 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     private final Map<Activity, Integer> activityToEscapingEdges = new HashMap<>();
     private final Map<Activity, Integer> activityToAllowed = new HashMap<>();
 
-    public static final double PRECISION_THRESHOLD = 0.4;
 
     private int currentLevel;
     boolean levelChange;
@@ -56,6 +59,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         globalComponentSystem().require(DataRequirements.RAW_LOG, logSource)
                                .require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping)
                                .require(EvaluationRequirements.PLACE_MARKING_HISTORY, markingHistoriesEvaluator)
+                                .require(ParameterRequirements.PRECISION_TRHESHOLD, precisionThreshold)
                                .provide(SupervisionRequirements.observable("felix.debug", DebugEvent.class, eventSupervisor));
         localComponentSystem().require(EvaluationRequirements.PLACE_IMPLICITNESS, implicitnessEvaluator);
     }
@@ -270,7 +274,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
             if(optimalPrecisionReached()){
                 return true;
             } else {
-                return checkPrecisionThreshold(PRECISION_THRESHOLD);
+                return checkPrecisionThreshold(precisionThreshold.get().getP());
             }
         }else{
             return false;
@@ -289,7 +293,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
         double precisionApprox = (1 - ((double)EE/allowed));
         if(precisionApprox > p) {
-            System.out.println("PREMATURE ABORT precision threshold " + PRECISION_THRESHOLD + " reached after level " + (currentLevel-1));
+            System.out.println("PREMATURE ABORT precision threshold " + precisionThreshold.get().getP() + " reached after level " + (currentLevel-1));
             return true;
         } else {
             return false;

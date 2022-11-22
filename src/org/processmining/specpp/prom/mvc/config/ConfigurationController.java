@@ -87,7 +87,7 @@ public class ConfigurationController extends AbstractStageController {
             else pcCfg.composition(LightweightPlaceComposition::new);
         }
 
-        if (pc.compositionStrategy == ProMConfig.CompositionStrategy.Felix)
+        if (pc.useETCPrecisionOriented)
             pcCfg.terminalComposer(FelixNewPlaceComposer::new);
         else {
             if (pc.ciprVariant != ProMConfig.CIPRVariant.None)
@@ -98,7 +98,6 @@ public class ConfigurationController extends AbstractStageController {
         InitializingBuilder<? extends ComposerComponent<Place, AdvancedComposition<Place>, CollectionOfPlaces>, ComposerComponent<Place, AdvancedComposition<Place>, CollectionOfPlaces>> fitnessFilterBuilder = isSupervisingEvents ? EventingPlaceFitnessFilter::new : PlaceFitnessFilter::new;
         switch (pc.compositionStrategy) {
             case Standard:
-            case Felix:
                 pcCfg.composerChain(fitnessFilterBuilder);
                 break;
             case TauDelta:
@@ -165,6 +164,7 @@ public class ConfigurationController extends AbstractStageController {
                     globalComponentSystem().provide(ParameterRequirements.DELTA_PARAMETERS.fulfilWithStatic(new DeltaParameters(pc.delta, pc.steepness)))
                                            .provide(ParameterRequirements.DELTA_COMPOSER_PARAMETERS.fulfilWithStatic(DeltaComposerParameters.getDefault()));
                 }
+                if (pc.useETCPrecisionOriented) globalComponentSystem().provide(ParameterRequirements.PRECISION_TRHESHOLD.fulfilWithStatic(PrecisionThreshold.p(pc.p)));
                 if (pc.enforceHeuristicThreshold)
                     globalComponentSystem().provide(ParameterRequirements.TREE_HEURISTIC_THRESHOLD.fulfilWithStatic(new TreeHeuristicThreshold(pc.heuristicThreshold, pc.heuristicThresholdRelation)));
             }

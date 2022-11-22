@@ -12,6 +12,9 @@ public class ParameterRequirements {
     public static final ParameterRequirement<OutputPathParameters> OUTPUT_PATH_PARAMETERS = parameters("output_paths", OutputPathParameters.class);
     public static final ParameterRequirement<PlaceGeneratorParameters> PLACE_GENERATOR_PARAMETERS = parameters("placegenerator.parameters", PlaceGeneratorParameters.class);
     public static final ParameterRequirement<TauFitnessThresholds> TAU_FITNESS_THRESHOLDS = parameters("tau_fitness_thresholds", TauFitnessThresholds.class);
+
+    public static final ParameterRequirement<PrecisionThreshold> PRECISION_TRHESHOLD = parameters("precision_threshold", PrecisionThreshold.class);
+
     public static final ParameterRequirement<DeltaParameters> DELTA_PARAMETERS = parameters("delta.parameters", DeltaParameters.class);
     public static final ParameterRequirement<SupervisionParameters> SUPERVISION_PARAMETERS = parameters("supervision.parameters", SupervisionParameters.class);
 

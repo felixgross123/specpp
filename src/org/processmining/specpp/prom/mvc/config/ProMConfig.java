@@ -24,7 +24,10 @@ public class ProMConfig {
     public boolean initiallyWireSelfLoops;
     CIPRVariant ciprVariant;
     List<FrameworkBridge.AnnotatedPostProcessor> ppPipeline;
-    double tau, delta;
+    double tau, delta, p;
+
+    public boolean useETCPrecisionOriented;
+
     public int steepness;
     int depth;
     Duration discoveryTimeLimit, totalTimeLimit;
@@ -49,6 +52,8 @@ public class ProMConfig {
         pc.compositionStrategy = CompositionStrategy.Standard;
         pc.initiallyWireSelfLoops = false;
         pc.ciprVariant = CIPRVariant.ReplayBased;
+        pc.useETCPrecisionOriented = false;
+        pc.p = 1.0;
         pc.ppPipeline = ImmutableList.of(FrameworkBridge.BridgedPostProcessors.LPBasedImplicitPlaceRemoval.getBridge(), FrameworkBridge.BridgedPostProcessors.ProMPetrinetConversion.getBridge());
         pc.tau = 1.0;
         pc.delta = -1.0;
@@ -81,6 +86,35 @@ public class ProMConfig {
         pc.respectWiring = true;
         pc.initiallyWireSelfLoops = true;
         pc.ppPipeline = ImmutableList.of(FrameworkBridge.BridgedPostProcessors.UniwiredSelfLoopAddition.getBridge(), FrameworkBridge.BridgedPostProcessors.LPBasedImplicitPlaceRemoval.getBridge(), FrameworkBridge.BridgedPostProcessors.ProMPetrinetConversion.getBridge());
+        return pc;
+    }
+
+    public static ProMConfig getFelix() {
+        ProMConfig pc = new ProMConfig();
+        pc.supervisionSetting = SupervisionSetting.PerformanceAndEvents;
+        pc.logToFile = true;
+        pc.logHeuristics = false;
+        pc.treeExpansionSetting = TreeExpansionSetting.BFS;
+        pc.respectWiring = false;
+        pc.supportRestart = false;
+        pc.enforceHeuristicThreshold = false;
+        pc.concurrentReplay = false;
+        pc.permitNegativeMarkingsDuringReplay = false;
+        pc.implicitnessReplaySubLogRestriction = ImplicitnessTestingParameters.SubLogRestriction.None;
+        pc.deltaAdaptationFunction = FrameworkBridge.BridgedDeltaAdaptationFunctions.Constant.getBridge();
+        pc.compositionStrategy = CompositionStrategy.Standard;
+        pc.initiallyWireSelfLoops = false;
+        pc.ciprVariant = CIPRVariant.None;
+        pc.useETCPrecisionOriented = true;
+        pc.p = 1.0;
+        pc.ppPipeline = ImmutableList.of(FrameworkBridge.BridgedPostProcessors.SelfLoopPlacesMerging.getBridge(), FrameworkBridge.BridgedPostProcessors.LPBasedImplicitPlaceRemoval.getBridge(), FrameworkBridge.BridgedPostProcessors.ProMPetrinetConversion.getBridge());
+        pc.tau = 1.0;
+        pc.delta = -1.0;
+        pc.steepness = -1;
+        pc.heuristicThreshold = -1;
+        pc.depth = -1;
+        pc.discoveryTimeLimit = null;
+        pc.totalTimeLimit = null;
         return pc;
     }
 
@@ -132,7 +166,7 @@ public class ProMConfig {
     }
 
     public enum CompositionStrategy implements DisplayableEnum {
-        Standard("Standard", ""), TauDelta("Tau-Delta", ""), Uniwired("Uniwired", ""), Felix("EE-oriented", "");
+        Standard("Standard", ""), TauDelta("Tau-Delta", ""), Uniwired("Uniwired", "");
 
         private final String displayName;
         private final String description;

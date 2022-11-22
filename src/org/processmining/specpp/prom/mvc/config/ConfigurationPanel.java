@@ -39,6 +39,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
     private final JCheckBox respectWiringCheckBox;
     private final JCheckBox supportRestartCheckBox;
     private final JCheckBox concurrentReplayCheckBox;
+
     private final JComboBox<FrameworkBridge.AnnotatedEvaluator> deltaAdaptationFunctionComboBox;
     private final JComboBox<ProMConfig.CompositionStrategy> compositionStrategyComboBox;
     private final MyListModel<FrameworkBridge.AnnotatedPostProcessor> ppPipelineModel;
@@ -100,6 +101,8 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
     private final JCheckBox enforceHeuristicScoreThresholdCheckBox;
     private final ComboBoxAndTextBasedInputField<Double, OrderingRelation> heuristicThresholdInput;
     private final CheckboxedComboBox<ProMConfig.CIPRVariant> ciprVariantCheckboxedComboBox;
+    private final JCheckBox ETCPrecisionOrientedComposerCheckBox;
+    private final TextBasedInputField<Double> ETCComposerThreshold;
     private final JCheckBox logHeuristicsCheckBox;
     private final JCheckBox initiallyWireSelfLoopsCheckBox = SwingFactory.labeledCheckBox("initially wire self loops", false);
     private final HorizontalJPanel deltaRelatedParametersPanel;
@@ -186,6 +189,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         concurrentReplayCheckBox.setToolTipText("Whether to favor a parallel (over variants) replay implementation. Influences performance.");
         evaluation.append(concurrentReplayCheckBox);
 
+
         permitNegativeMarkingsCheckBox = SwingFactory.labeledCheckBox("permit negative markings during token-based replay");
         permitNegativeMarkingsCheckBox.addChangeListener(e -> updatedEvaluationSettings());
         permitNegativeMarkingsCheckBox.setToolTipText("Whether the token count during replay is clipped at zero, thus changing the overfed semantics.");
@@ -234,6 +238,17 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         ciprVariantCheckboxedComboBox.getComboBox()
                                      .setRenderer(createTooltippedListCellRenderer(ImmutableMap.of(ProMConfig.CIPRVariant.ReplayBased, "Uses subregion implicitness on the markings obtained from replay.", ProMConfig.CIPRVariant.LPBased, "Uses lp optimization based structural implicitness.")));
         composition.append(ciprVariantCheckboxedComboBox);
+
+        ETCPrecisionOrientedComposerCheckBox = SwingFactory.labeledCheckBox("ETC-oriented Composer", false);
+        ETCPrecisionOrientedComposerCheckBox.addItemListener(e -> updatedCompositionSettings());
+        ETCComposerThreshold = SwingFactory.textBasedInputField("Threshold p", zeroOneDoubleFunc, 10);
+        ETCComposerThreshold.setText("1.0");
+        ETCComposerThreshold.setToolTipText("Precision Threshold in [0,1].");
+        ETCComposerThreshold.setVisible(false);
+
+        composition.append(ETCPrecisionOrientedComposerCheckBox);
+        composition.append(ETCComposerThreshold);
+
         composition.completeWithWhitespace();
 
         // ** POST PROCESSING ** //
@@ -388,6 +403,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
                                                 .setSelectedItem(ImplicitnessReplayRestriction.FittingOnEvaluatedPair);
         deltaAdaptationFunctionComboBox.setSelectedItem(pc.deltaAdaptationFunction);
         compositionStrategyComboBox.setSelectedItem(pc.compositionStrategy);
+        ETCPrecisionOrientedComposerCheckBox.setSelected(pc.useETCPrecisionOriented);
         ciprVariantCheckboxedComboBox.getCheckBox().setSelected(pc.ciprVariant != ProMConfig.CIPRVariant.None);
         ciprVariantCheckboxedComboBox.getComboBox()
                                      .setSelectedItem(pc.ciprVariant != ProMConfig.CIPRVariant.None ? pc.ciprVariant : ProMConfig.CIPRVariant.ReplayBased);
@@ -455,6 +471,9 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         pc.ciprVariant = ciprVariantCheckboxedComboBox.getCheckBox()
                                                       .isSelected() ? (ProMConfig.CIPRVariant) ciprVariantCheckboxedComboBox.getComboBox()
                                                                                                                             .getSelectedItem() : ProMConfig.CIPRVariant.None;
+        pc.useETCPrecisionOriented = ETCPrecisionOrientedComposerCheckBox.isSelected();
+        pc.p = ETCComposerThreshold.getInput();
+
         if (!validatePostProcessingPipeline(ppPipelineModel)) return null;
         pc.ppPipeline = ImmutableList.copyOf(ppPipelineModel.iterator());
         Double rawTau = tauInput.getInput();
@@ -496,7 +515,11 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         initiallyWireSelfLoopsCheckBox.setVisible(compositionStrategyComboBox.getSelectedItem() == ProMConfig.CompositionStrategy.Uniwired || respectWiringCheckBox.isSelected());
         ciprVariantCheckboxedComboBox.getComboBox()
                                      .setVisible(ciprVariantCheckboxedComboBox.getCheckBox().isSelected());
+        ETCComposerThreshold.setVisible(ETCPrecisionOrientedComposerCheckBox.isSelected());
         deltaAdaptationLabeledComboBox.setVisible(compositionStrategyComboBox.getSelectedItem() == ProMConfig.CompositionStrategy.TauDelta);
+
+        //TODO Make Checkboxes ETC-Oriented and CIPR mutually exclusive
+
         changeDeltaParametersVisibility();
         revalidate();
         updateReadinessState();
@@ -563,6 +586,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         Lightweight(ProMConfig::getLightweight),
         TauDelta(ProMConfig::getTauDelta),
         Uniwired(ProMConfig::getUniwired),
+        Felix(ProMConfig::getFelix),
         Last(null),
         Loaded(null);
 
