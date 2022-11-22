@@ -241,6 +241,8 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
 
         ETCPrecisionOrientedComposerCheckBox = SwingFactory.labeledCheckBox("ETC-oriented Composer", false);
         ETCPrecisionOrientedComposerCheckBox.addItemListener(e -> updatedCompositionSettings());
+        ETCPrecisionOrientedComposerCheckBox.addActionListener(e -> ciprVariantCheckboxedComboBox.getCheckBox().setSelected(false));
+        ciprVariantCheckboxedComboBox.getCheckBox().addActionListener(e -> ETCPrecisionOrientedComposerCheckBox.setSelected(false));
         ETCComposerThreshold = SwingFactory.textBasedInputField("Threshold p", zeroOneDoubleFunc, 10);
         ETCComposerThreshold.setText("1.0");
         ETCComposerThreshold.setToolTipText("Precision Threshold in [0,1].");
@@ -586,7 +588,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         Lightweight(ProMConfig::getLightweight),
         TauDelta(ProMConfig::getTauDelta),
         Uniwired(ProMConfig::getUniwired),
-        Felix(ProMConfig::getFelix),
+        ETC_oriented(ProMConfig::getETC),
         Last(null),
         Loaded(null);
 
