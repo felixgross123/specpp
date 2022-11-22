@@ -92,6 +92,7 @@ public class ProMConfig {
     public static ProMConfig getETC() {
         ProMConfig pc = getDefault();
         pc.ciprVariant = CIPRVariant.None;
+        pc.treeExpansionSetting = TreeExpansionSetting.BFS;
         pc.useETCPrecisionOriented = true;
         pc.ppPipeline = ImmutableList.of(FrameworkBridge.BridgedPostProcessors.SelfLoopPlacesMerging.getBridge(), FrameworkBridge.BridgedPostProcessors.LPBasedImplicitPlaceRemoval.getBridge(), FrameworkBridge.BridgedPostProcessors.ProMPetrinetConversion.getBridge());
         return pc;
