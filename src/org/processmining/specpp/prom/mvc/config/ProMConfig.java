@@ -132,7 +132,7 @@ public class ProMConfig {
     }
 
     public enum CompositionStrategy implements DisplayableEnum {
-        Standard("Standard", ""), TauDelta("Tau-Delta", ""), Uniwired("Uniwired", ""), Felix("Felix' Finest", "");
+        Standard("Standard", ""), TauDelta("Tau-Delta", ""), Uniwired("Uniwired", ""), Felix("EE-oriented", "");
 
         private final String displayName;
         private final String description;
