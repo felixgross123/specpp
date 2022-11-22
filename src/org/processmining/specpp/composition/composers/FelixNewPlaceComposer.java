@@ -43,11 +43,12 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     private final Map<Activity, Set<Place>> activityToIngoingPlaces = new HashMap<>();
 
     private final Map<Activity, Integer> activityToEscapingEdges = new HashMap<>();
+    private final Map<Activity, Integer> activityToAllowed = new HashMap<>();
 
-    private boolean foundOnCurrentLevel = true;
+    public static final double PRECISION_THRESHOLD = 0.4;
 
-    private boolean levelChange = false;
     private int currentLevel;
+    boolean levelChange;
 
 
     public FelixNewPlaceComposer(I composition) {
@@ -126,13 +127,17 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         addToActivityPlacesMapping(p);
 
         for (Activity a : activitiesToRevealuate) {
-            int oldScore = activityToEscapingEdges.get(a);
-            int newScore = evaluateEscapingEdges(a);
+            int[] evalRes = evaluateEscapingEdges(a);
+            int oldEE = activityToEscapingEdges.get(a);
+            int newEE = evalRes[0];
+            int newAllowed = evalRes[1];
 
-            if (oldScore > newScore) {
+            if (oldEE > newEE) {
                 isMorePrecise = true;
-                //note: if p brings gain in precision we assume that it will be accepted (hence we update the score)
-                activityToEscapingEdges.put(a, newScore);
+                //note: if p brings gain in precision we assume that it will be accepted (hence we update the scores)
+                activityToEscapingEdges.put(a, newEE);
+                activityToAllowed.put(a, newAllowed);
+
             }
         }
         removeFromActivityPlacesMapping(p);
@@ -154,12 +159,13 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
         for (Activity a : activitiesToReevaluatePPotImpl) {
 
-            int oldScore = activityToEscapingEdges.get(a);
-            //System.out.print("Reeval ");
+            int[] evalRes = evaluateEscapingEdges(a);
+            int oldEE = activityToEscapingEdges.get(a);
+            int newEE = evalRes[0];
+            int oldAllowed = activityToAllowed.get(a);
+            int newAllowed = evalRes[1];
 
-            int newScore = evaluateEscapingEdges(a);
-
-            if (oldScore < newScore) {
+            if (!(oldEE == newEE && oldAllowed == newAllowed)) {
                 implicit = false;
                 break;
             }
@@ -181,9 +187,8 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         //update ActivityPlaceMapping
         addToActivityPlacesMapping(candidate);
 
-        //update currentTreeLevel
-        foundOnCurrentLevel = true;
-        if(candidate.size() > currentLevel){
+        //check levelChange
+        if(candidate.size() > currentLevel) {
             currentLevel = candidate.size();
             levelChange = true;
         }
@@ -191,11 +196,13 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
     @Override
     protected void candidateRejected(Place candidate) {
-        //update currentTreeLevel
-        if(candidate.size() > currentLevel){
+
+        //check levelChange
+        if(candidate.size() > currentLevel) {
             currentLevel = candidate.size();
             levelChange = true;
         }
+
     }
 
 
@@ -208,8 +215,9 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
     @Override
     protected void initSelf() {
-
+        //init TreeLevels
         currentLevel = 2;
+        levelChange = false;
 
         // Build Prefix-Automaton
         Log log = logSource.getData();
@@ -228,12 +236,13 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         Set<Activity> activities = actTransMapping.getData().keySet();
         for(Activity a : activities) {
             if(!a.equals(Factory.ARTIFICIAL_START)) {
-                activityToEscapingEdges.put(a, evaluateEscapingEdges(a));
+                int[] evalRes = evaluateEscapingEdges(a);
+                int EE = evalRes[0];
+                int allowed = evalRes[1];
+                activityToEscapingEdges.put(a, EE);
+                activityToAllowed.put(a, allowed);
             }
         }
-
-
-
     }
 
     private void addToActivityPlacesMapping(Place p){
@@ -255,34 +264,53 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     @Override
     public boolean isFinished() {
 
+        //only check on levelChange
         if(levelChange) {
-            //check if place was added on previous level
-            /*
-            if(!foundOnCurrentLevel) {
-                System.out.println("PREMATURE ABORT no place found on level " + (currentLevel-1));
-                return true;
-            }
-            foundOnCurrentLevel = false;
             levelChange = false;
-
-             */
-
-            //check if optimal precision is reached
-            for(int i : activityToEscapingEdges.values()) {
-                if(i != 0){
-                    return false;
-                }
+            if(optimalPrecisionReached()){
+                return true;
+            } else {
+                return checkPrecisionThreshold(PRECISION_THRESHOLD);
             }
-
-            System.out.println("PREMATURE ABORT optimal precision reached on Level" + (currentLevel-1));
-            return true;
+        }else{
+            return false;
         }
-        return false;
     }
 
-    public int evaluateEscapingEdges(Activity a) {
+    public boolean checkPrecisionThreshold(double p) {
+        int EE = 0;
+        for (int i : activityToEscapingEdges.values()) {
+            EE += i;
+        }
+        int allowed = 0;
+        for (int i : activityToAllowed.values()) {
+            allowed += i;
+        }
+
+        double precisionApprox = (1 - ((double)EE/allowed));
+        if(precisionApprox > p) {
+            System.out.println("PREMATURE ABORT precision threshold " + PRECISION_THRESHOLD + " reached after level " + (currentLevel-1));
+            return true;
+        } else {
+            return false;
+        }
+
+    }
+
+    public boolean optimalPrecisionReached() {
+        for(int i : activityToEscapingEdges.values()) {
+            if(i != 0){
+                return false;
+            }
+        }
+        System.out.println("PREMATURE ABORT optimal precision reached after level " + (currentLevel-1));
+        return true;
+    }
+
+    public int[] evaluateEscapingEdges(Activity a) {
 
         int escapingEdges = 0;
+        int allowed = 0;
         Log log = logSource.getData();
 
         if(activityToIngoingPlaces.get(a).isEmpty()) {
@@ -292,6 +320,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
                 int vIndex = variant.getIndex();
 
                 for(int i=0; i<variant.getVariant().getLength(); i++) {
+                    allowed += log.getVariantFrequency(vIndex);
                     if(!variant.getVariant().getAt(i).equals(a)) {
                         escapingEdges += log.getVariantFrequency(vIndex);
                     }
@@ -338,8 +367,9 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
                     }
 
                     if(isAllowedO) {
-                        //check if a is reflected
+                        allowed += log.getVariantFrequency(vIndex);
 
+                        //check if a is reflected
                         if (!logState.checkForOutgoingAct(a)) {
                             //a is not reflected, hence escaping
                             escapingEdges += log.getVariantFrequency(vIndex);
@@ -349,7 +379,8 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
             }
         }
         //System.out.println("EE(" + a +") = " + escapingEdges);
-        return escapingEdges;
+        int[] res = {escapingEdges, allowed};
+        return res;
     }
 
 
