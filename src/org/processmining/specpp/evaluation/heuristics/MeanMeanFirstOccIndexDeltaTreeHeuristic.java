@@ -5,7 +5,6 @@ import org.processmining.specpp.componenting.data.DataRequirements;
 import org.processmining.specpp.componenting.data.ParameterRequirements;
 import org.processmining.specpp.componenting.delegators.DelegatingDataSource;
 import org.processmining.specpp.componenting.system.ComponentSystemAwareBuilder;
-import org.processmining.specpp.config.parameters.PrecisionThreshold;
 import org.processmining.specpp.config.parameters.TreeHeuristcAlpha;
 import org.processmining.specpp.datastructures.log.Activity;
 import org.processmining.specpp.datastructures.log.Log;
@@ -22,20 +21,25 @@ import org.processmining.specpp.traits.ZeroOneBounded;
 
 import java.util.*;
 
-public class AvgAvgFirstOccIndexDeltaTreeHeuristic implements HeuristicStrategy<PlaceNode, TreeNodeScore>, ZeroOneBounded, SubtreeMonotonicity.Decreasing {
+public class MeanMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicStrategy<PlaceNode, TreeNodeScore>, ZeroOneBounded, SubtreeMonotonicity.Decreasing {
 
-    private Map<Activity, Double> activityToAvgFirstOccurrenceIndex;
-    private final DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping;
-
+    private final Map<Activity, Double> activityToMeanFirstOccurrenceIndex;
+    private final BidiMap<Activity, Transition> actTransMapping;
     private final double alpha;
 
-    public AvgAvgFirstOccIndexDeltaTreeHeuristic(Map<Activity, Double> activityToAvgFirstOccurrenceIndex, DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping, double alpha) {
-        this.activityToAvgFirstOccurrenceIndex = activityToAvgFirstOccurrenceIndex;
+    private final double maxDelta;
+
+    private final int maxSize;
+
+    public MeanMeanFirstOccIndexDeltaTreeHeuristic(Map<Activity, Double> activityToMeanFirstOccurrenceIndex, BidiMap<Activity, Transition> actTransMapping, double alpha, double maxDelta, int maxSize) {
+        this.activityToMeanFirstOccurrenceIndex = activityToMeanFirstOccurrenceIndex;
         this.actTransMapping = actTransMapping;
         this.alpha = alpha;
+        this.maxDelta = maxDelta;
+        this.maxSize = maxSize;
     }
 
-    public static class Builder extends ComponentSystemAwareBuilder<AvgAvgFirstOccIndexDeltaTreeHeuristic> {
+    public static class Builder extends ComponentSystemAwareBuilder<MeanMeanFirstOccIndexDeltaTreeHeuristic> {
 
 
 
@@ -51,9 +55,9 @@ public class AvgAvgFirstOccIndexDeltaTreeHeuristic implements HeuristicStrategy<
         }
 
         @Override
-        protected AvgAvgFirstOccIndexDeltaTreeHeuristic buildIfFullySatisfied() {
+        protected MeanMeanFirstOccIndexDeltaTreeHeuristic buildIfFullySatisfied() {
             Log log = rawLog.getData();
-            Map<Activity, Double> activityToAvgFirstOccurrenceIndex = new HashMap<>();
+            Map<Activity, Double> activityToMeanFirstOccurrenceIndex = new HashMap<>();
             Map<Activity, Integer> activityToFreqSum = new HashMap<>();
 
             for (IndexedVariant indexedVariant : log) {
@@ -65,14 +69,14 @@ public class AvgAvgFirstOccIndexDeltaTreeHeuristic implements HeuristicStrategy<
                 int j = 0;
                 for (Activity a : variant) {
                     if (!seen.contains(a)) {
-                        if(!activityToAvgFirstOccurrenceIndex.containsKey(a)) {
-                            activityToAvgFirstOccurrenceIndex.put(a, Double.valueOf(j));
+                        if(!activityToMeanFirstOccurrenceIndex.containsKey(a)) {
+                            activityToMeanFirstOccurrenceIndex.put(a, (double) j);
                             activityToFreqSum.put(a,variantFrequency);
                         } else {
                             int freqSumA = activityToFreqSum.get(a);
 
-                            double newAvg = ((double)freqSumA / (double)(freqSumA + variantFrequency)) * activityToAvgFirstOccurrenceIndex.get(a) + ((double)variantFrequency / (double)(freqSumA + variantFrequency)) * j;
-                            activityToAvgFirstOccurrenceIndex.put(a, newAvg);
+                            double newAvg = ((double)freqSumA / (double)(freqSumA + variantFrequency)) * activityToMeanFirstOccurrenceIndex.get(a) + ((double)variantFrequency / (double)(freqSumA + variantFrequency)) * j;
+                            activityToMeanFirstOccurrenceIndex.put(a, newAvg);
                             activityToFreqSum.put(a,freqSumA + variantFrequency);
                         }
                     }
@@ -81,7 +85,10 @@ public class AvgAvgFirstOccIndexDeltaTreeHeuristic implements HeuristicStrategy<
                 }
             }
 
-            return new AvgAvgFirstOccIndexDeltaTreeHeuristic(activityToAvgFirstOccurrenceIndex, actTransMapping, alpha.getData().getP());
+            double maxDelta = activityToMeanFirstOccurrenceIndex.get(Factory.ARTIFICIAL_END);
+            int maxSize = 2*actTransMapping.getData().size();
+
+            return new MeanMeanFirstOccIndexDeltaTreeHeuristic(activityToMeanFirstOccurrenceIndex, actTransMapping.getData(), alpha.getData().getP(), maxDelta, maxSize);
         }
     }
 
@@ -94,22 +101,19 @@ public class AvgAvgFirstOccIndexDeltaTreeHeuristic implements HeuristicStrategy<
 
         double avgIndexPreset = 0.0;
         for (Transition t : p.preset()) {
-            Activity a = actTransMapping.getData().getKey(t);
-            avgIndexPreset += activityToAvgFirstOccurrenceIndex.get(a);
+            Activity a = actTransMapping.getKey(t);
+            avgIndexPreset += activityToMeanFirstOccurrenceIndex.get(a);
         }
         avgIndexPreset /= p.preset().size();
 
         double avgIndexPostset = 0.0;
         for (Transition t : p.postset()) {
-            Activity a = actTransMapping.getData().getKey(t);
-            avgIndexPostset += activityToAvgFirstOccurrenceIndex.get(a);
+            Activity a = actTransMapping.getKey(t);
+            avgIndexPostset += activityToMeanFirstOccurrenceIndex.get(a);
         }
         avgIndexPostset /= p.postset().size();
 
-        double maxDelta = activityToAvgFirstOccurrenceIndex.get(Factory.ARTIFICIAL_END);
-        int maxSize = 2*actTransMapping.get().size();
-
-        double score =  alpha * (Math.abs(avgIndexPostset - avgIndexPreset) / maxDelta) + (1-alpha) * ((double) node.getPlace().size() / maxSize);
+        double score =  alpha * (Math.abs(avgIndexPostset - avgIndexPreset) / maxDelta) + (1-alpha) * ((double) node.getDepth() / maxSize);
         return new TreeNodeScore(score);
     }
 

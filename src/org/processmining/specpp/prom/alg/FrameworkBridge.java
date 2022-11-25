@@ -42,13 +42,22 @@ public class FrameworkBridge {
     public static final List<AnnotatedPostProcessor> POST_PROCESSORS = Arrays.asList(BridgedPostProcessors.ReplayBasedImplicitPlaceRemoval.getBridge(), BridgedPostProcessors.LPBasedImplicitPlaceRemoval.getBridge(), BridgedPostProcessors.SelfLoopPlacesMerging.getBridge(), BridgedPostProcessors.UniwiredSelfLoopAddition.getBridge(), BridgedPostProcessors.DanglingTransitionsAddition.getBridge(), BridgedPostProcessors.PlaceTxtExport.getBridge(), BridgedPostProcessors.ProMPetrinetConversion.getBridge());
 
     public enum BridgedHeuristics {
+        DirectlyFollows(new AnnotatedTreeHeuristic("Directly Follows", DirectlyFollowsTreeHeuristic.Builder::new)),
+
+        MeanMeanFirstOccIndexDelta(new AnnotatedTreeHeuristic("MeanMeanFirstOccIndexDelta", MeanMeanFirstOccIndexDeltaTreeHeuristic.Builder::new)),
+        MedMeanFirstOccIndexDelta(new AnnotatedTreeHeuristic("MedMeanFirstOccIndexDelta", MedMeanFirstOccIndexDeltaTreeHeuristic.Builder::new)),
+        HarMeanMeanFirstOccIndexDelta(new AnnotatedTreeHeuristic("HarMeanMeanFirstOccIndexDelta", HarMeanMeanFirstOccIndexDeltaTreeHeuristic.Builder::new)),
+
+        MeanMedFirstOccIndexDelta(new AnnotatedTreeHeuristic("MeanMedFirstOccIndexDelta", MeanMedFirstOccIndexDeltaTreeHeuristic.Builder::new)),
+        MedMedFirstOccIndexDelta(new AnnotatedTreeHeuristic("MedMedFirstOccIndexDelta", MedMedFirstOccIndexDeltaTreeHeuristic.Builder::new)),
+        HarMeanMedFirstOccIndexDelta(new AnnotatedTreeHeuristic("HarMeanMedFirstOccIndexDelta", HarMeanMedFirstOccIndexDeltaTreeHeuristic.Builder::new)),
+
+        MeanModFirstOccIndexDelta(new AnnotatedTreeHeuristic("MeanModFirstOccIndexDelta", MeanModFirstOccIndexDeltaTreeHeuristic.Builder::new)),
+        MedModFirstOccIndexDelta(new AnnotatedTreeHeuristic("MedModFirstOccIndexDelta", MedModFirstOccIndexDeltaTreeHeuristic.Builder::new)),
+        HarMeanModFirstOccIndexDelta(new AnnotatedTreeHeuristic("HarMeanModFirstOccIndexDelta", HarMeanModFirstOccIndexDeltaTreeHeuristic.Builder::new)),
+
         EventuallyFollows(new AnnotatedTreeHeuristic("Eventually Follows", EventuallyFollowsTreeHeuristic.Builder::new)),
 
-        AvgAvgFirstOccIndexDelta(new AnnotatedTreeHeuristic("AvgAvgFirstOccIndexDelta", AvgAvgFirstOccIndexDeltaTreeHeuristic.Builder::new)),
-        MedAvgFirstOccIndexDelta(new AnnotatedTreeHeuristic("MedAvgFirstOccIndexDelta", MedianAvgFirstOccIndexDeltaTreeHeuristic.Builder::new)),
-        HearMeanAvgFirstOccIndexDelta(new AnnotatedTreeHeuristic("HarMeanAvgFirstOccIndexDelta", HarMeanAvgFirstOccIndexDeltaTreeHeuristic.Builder::new)),
-
-        DirectlyFollows(new AnnotatedTreeHeuristic("Directly Follows", DirectlyFollowsTreeHeuristic.Builder::new)),
         GreedyETCPrecision(new AnnotatedTreeHeuristic("GreedyETCPrecision", GreedyETCPrecisionTreeHeuristic.Builder::new)),
         BFS_Emulation(new AnnotatedTreeHeuristic("BFS Emulation", () -> () -> HeuristicUtils.<PlaceNode>bfs())),
         DFS_Emulation(new AnnotatedTreeHeuristic("DFS Emulation", () -> () -> HeuristicUtils.<PlaceNode>dfs()));
