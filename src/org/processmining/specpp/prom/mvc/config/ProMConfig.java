@@ -91,18 +91,6 @@ public class ProMConfig {
         return pc;
     }
 
-    public static ProMConfig getUniwiredHeuristic() {
-        ProMConfig pc = getDefault();
-        pc.ciprVariant = CIPRVariant.None;
-        pc.treeExpansionSetting = TreeExpansionSetting.Heuristic;
-        pc.treeHeuristic = FrameworkBridge.BridgedHeuristics.MeanMeanFirstOccIndexDelta.getBridge();
-        pc.compositionStrategy = CompositionStrategy.Uniwired;
-        pc.respectWiring = true;
-        pc.initiallyWireSelfLoops = true;
-        pc.ppPipeline = ImmutableList.of(FrameworkBridge.BridgedPostProcessors.UniwiredSelfLoopAddition.getBridge(), FrameworkBridge.BridgedPostProcessors.LPBasedImplicitPlaceRemoval.getBridge(), FrameworkBridge.BridgedPostProcessors.ProMPetrinetConversion.getBridge());
-        return pc;
-    }
-
     public static ProMConfig getETC() {
         ProMConfig pc = getDefault();
         pc.ciprVariant = CIPRVariant.None;
@@ -116,7 +104,7 @@ public class ProMConfig {
         ProMConfig pc = getDefault();
         pc.ciprVariant = CIPRVariant.None;
         pc.treeExpansionSetting = TreeExpansionSetting.Heuristic;
-        pc.treeHeuristic = FrameworkBridge.BridgedHeuristics.MeanMeanFirstOccIndexDelta.getBridge();
+        pc.treeHeuristic = FrameworkBridge.BridgedHeuristics.AvgAvgFirstOccIndexDelta.getBridge();
         pc.useETCPrecisionOriented = true;
         pc.ppPipeline = ImmutableList.of(FrameworkBridge.BridgedPostProcessors.SelfLoopPlacesMerging.getBridge(), FrameworkBridge.BridgedPostProcessors.LPBasedImplicitPlaceRemoval.getBridge(), FrameworkBridge.BridgedPostProcessors.ProMPetrinetConversion.getBridge());
         return pc;

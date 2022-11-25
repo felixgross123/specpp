@@ -36,6 +36,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
     private final JComboBox<ProMConfig.SupervisionSetting> supervisionComboBox;
     private final JCheckBox trackCandidateTreeCheckBox;
     private final JComboBox<ProMConfig.TreeExpansionSetting> expansionStrategyComboBox;
+    private final JComboBox<FrameworkBridge.AnnotatedTreeHeuristic> heuristicComboBox;
     private final JCheckBox respectWiringCheckBox;
     private final JCheckBox supportRestartCheckBox;
     private final JCheckBox concurrentReplayCheckBox;
@@ -159,8 +160,9 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         candidateEnumerationLabeledComboBox.add(SwingFactory.help("The strategy by which the place candidate tree is traversed.", "BFS - breadth first search\nDFS - depth first search\nHeuristic - using the subsequently configured heuristic"));
         proposal.append(candidateEnumerationLabeledComboBox);
         bridgedHeuristicsLabeledComboBox = SwingFactory.labeledComboBox("Heuristic", FrameworkBridge.HEURISTICS.toArray(new FrameworkBridge.AnnotatedTreeHeuristic[0]));
-        SwingFactory.resizeComboBox(bridgedHeuristicsLabeledComboBox.getComboBox(), 150, 25);
-        bridgedHeuristicsLabeledComboBox.getComboBox().addItemListener(e -> {
+        heuristicComboBox = bridgedHeuristicsLabeledComboBox.getComboBox();
+        SwingFactory.resizeComboBox(heuristicComboBox, 150, 25);
+        heuristicComboBox.addItemListener(e -> {
             if (e.getStateChange() == ItemEvent.SELECTED) updatedProposalSettings();
         });
         bridgedHeuristicsLabeledComboBox.setVisible(false);
@@ -399,7 +401,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         expansionStrategyComboBox.setSelectedItem(pc.treeExpansionSetting);
         respectWiringCheckBox.setSelected(pc.respectWiring);
         supportRestartCheckBox.setSelected(pc.supportRestart);
-        bridgedHeuristicsLabeledComboBox.getComboBox().setSelectedItem(pc.treeHeuristic);
+        heuristicComboBox.setSelectedItem(pc.treeHeuristic);
         enforceHeuristicScoreThresholdCheckBox.setSelected(pc.enforceHeuristicThreshold);
         concurrentReplayCheckBox.setSelected(pc.concurrentReplay);
         permitNegativeMarkingsCheckBox.setSelected(pc.permitNegativeMarkingsDuringReplay);
@@ -458,7 +460,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         pc.treeExpansionSetting = (ProMConfig.TreeExpansionSetting) expansionStrategyComboBox.getSelectedItem();
         pc.respectWiring = respectWiringCheckBox.isSelected();
         pc.supportRestart = supportRestartCheckBox.isSelected();
-        pc.treeHeuristic = (FrameworkBridge.AnnotatedTreeHeuristic) bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem();
+        pc.treeHeuristic = (FrameworkBridge.AnnotatedTreeHeuristic) heuristicComboBox.getSelectedItem();
         pc.enforceHeuristicThreshold = enforceHeuristicScoreThresholdCheckBox.isSelected();
         pc.concurrentReplay = concurrentReplayCheckBox.isSelected();
         pc.permitNegativeMarkingsDuringReplay = permitNegativeMarkingsCheckBox.isSelected();
@@ -557,15 +559,11 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         enforceHeuristicScoreThresholdCheckBox.setVisible(expansionStrategyComboBox.getSelectedItem() == ProMConfig.TreeExpansionSetting.Heuristic);
         heuristicThresholdInput.setVisible(expansionStrategyComboBox.getSelectedItem() == ProMConfig.TreeExpansionSetting.Heuristic && enforceHeuristicScoreThresholdCheckBox.isSelected());
         treeHeuristicAlpha.setVisible(expansionStrategyComboBox.getSelectedItem() == ProMConfig.TreeExpansionSetting.Heuristic &&
-                (bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.MeanMeanFirstOccIndexDelta.getBridge()
-                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.MedMeanFirstOccIndexDelta.getBridge()
-                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.HarMeanMeanFirstOccIndexDelta.getBridge()
-                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.MeanMedFirstOccIndexDelta.getBridge()
-                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.MedMedFirstOccIndexDelta.getBridge()
-                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.HarMeanMedFirstOccIndexDelta.getBridge()
-                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.MeanModFirstOccIndexDelta.getBridge()
-                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.MedModFirstOccIndexDelta.getBridge()
-                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.HarMeanModFirstOccIndexDelta.getBridge())
+                (bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.AvgAvgFirstOccIndexDelta
+                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.MedAvgFirstOccIndexDelta
+                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.HearMeanAvgFirstOccIndexDelta
+                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.DirectlyFollows
+                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.EventuallyFollows)
         );
         revalidate();
         updateReadinessState();
@@ -608,7 +606,6 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         Lightweight(ProMConfig::getLightweight),
         TauDelta(ProMConfig::getTauDelta),
         Uniwired(ProMConfig::getUniwired),
-        Uniwired_heuristic(ProMConfig::getUniwiredHeuristic),
         ETC_oriented(ProMConfig::getETC),
         ETC_oriended_heuristic(ProMConfig::getETCHeuristic),
         Last(null),
