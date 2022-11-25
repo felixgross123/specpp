@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.processmining.specpp.componenting.data.DataSource;
 import org.processmining.specpp.config.parameters.OutputPathParameters;
+import org.processmining.specpp.config.parameters.TreeHeuristcAlpha;
 import org.processmining.specpp.datastructures.petri.ProMPetrinetWrapper;
 import org.processmining.specpp.datastructures.vectorization.OrderingRelation;
 import org.processmining.specpp.evaluation.implicitness.ImplicitnessTestingParameters;
@@ -107,6 +108,8 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
     private final JCheckBox initiallyWireSelfLoopsCheckBox = SwingFactory.labeledCheckBox("initially wire self loops", false);
     private final HorizontalJPanel deltaRelatedParametersPanel;
 
+    private final TextBasedInputField<Double> treeHeuristicAlpha;
+
     public ConfigurationPanel(ConfigurationController controller) {
         super(controller, new GridBagLayout());
 
@@ -179,6 +182,13 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         proposal.append(respectWiringCheckBox);
         supportRestartCheckBox = SwingFactory.labeledCheckBox("use restartable implementation");
         supportRestartCheckBox.addChangeListener(e -> updatedProposalSettings());
+        treeHeuristicAlpha = SwingFactory.textBasedInputField("alpha", zeroOneDoubleFunc, 10);
+        treeHeuristicAlpha.setText("1.0");
+        treeHeuristicAlpha.setToolTipText("TreeHeurstic-Parameter in [0,1].");
+        treeHeuristicAlpha.setVisible(false);
+
+        proposal.append(treeHeuristicAlpha);
+
         proposal.completeWithWhitespace();
 
         // ** EVALUATION ** //
@@ -475,6 +485,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
                                                                                                                             .getSelectedItem() : ProMConfig.CIPRVariant.None;
         pc.useETCPrecisionOriented = ETCPrecisionOrientedComposerCheckBox.isSelected();
         pc.p = ETCComposerThreshold.getInput();
+        pc.alpha = treeHeuristicAlpha.getInput();
 
         if (!validatePostProcessingPipeline(ppPipelineModel)) return null;
         pc.ppPipeline = ImmutableList.copyOf(ppPipelineModel.iterator());
@@ -547,6 +558,13 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         bridgedHeuristicsLabeledComboBox.setVisible(expansionStrategyComboBox.getSelectedItem() == ProMConfig.TreeExpansionSetting.Heuristic);
         enforceHeuristicScoreThresholdCheckBox.setVisible(expansionStrategyComboBox.getSelectedItem() == ProMConfig.TreeExpansionSetting.Heuristic);
         heuristicThresholdInput.setVisible(expansionStrategyComboBox.getSelectedItem() == ProMConfig.TreeExpansionSetting.Heuristic && enforceHeuristicScoreThresholdCheckBox.isSelected());
+        treeHeuristicAlpha.setVisible(expansionStrategyComboBox.getSelectedItem() == ProMConfig.TreeExpansionSetting.Heuristic &&
+                (bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.AvgAvgFirstOccIndexDelta
+                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.MedAvgFirstOccIndexDelta
+                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.HearMeanAvgFirstOccIndexDelta
+                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.DirectlyFollows
+                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.EventuallyFollows)
+        );
         revalidate();
         updateReadinessState();
     }
@@ -589,6 +607,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         TauDelta(ProMConfig::getTauDelta),
         Uniwired(ProMConfig::getUniwired),
         ETC_oriented(ProMConfig::getETC),
+        ETC_oriended_heuristic(ProMConfig::getETCHeuristic),
         Last(null),
         Loaded(null);
 

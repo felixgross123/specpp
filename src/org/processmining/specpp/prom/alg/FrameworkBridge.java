@@ -43,10 +43,15 @@ public class FrameworkBridge {
 
     public enum BridgedHeuristics {
         EventuallyFollows(new AnnotatedTreeHeuristic("Eventually Follows", EventuallyFollowsTreeHeuristic.Builder::new)),
+
+        AvgAvgFirstOccIndexDelta(new AnnotatedTreeHeuristic("AvgAvgFirstOccIndexDelta", AvgAvgFirstOccIndexDeltaTreeHeuristic.Builder::new)),
+        MedAvgFirstOccIndexDelta(new AnnotatedTreeHeuristic("MedAvgFirstOccIndexDelta", MedianAvgFirstOccIndexDeltaTreeHeuristic.Builder::new)),
+        HearMeanAvgFirstOccIndexDelta(new AnnotatedTreeHeuristic("HarMeanAvgFirstOccIndexDelta", HarMeanAvgFirstOccIndexDeltaTreeHeuristic.Builder::new)),
+
         DirectlyFollows(new AnnotatedTreeHeuristic("Directly Follows", DirectlyFollowsTreeHeuristic.Builder::new)),
+        GreedyETCPrecision(new AnnotatedTreeHeuristic("GreedyETCPrecision", GreedyETCPrecisionTreeHeuristic.Builder::new)),
         BFS_Emulation(new AnnotatedTreeHeuristic("BFS Emulation", () -> () -> HeuristicUtils.<PlaceNode>bfs())),
-        DFS_Emulation(new AnnotatedTreeHeuristic("DFS Emulation", () -> () -> HeuristicUtils.<PlaceNode>dfs())),
-        AvgFirstOccIndexDelta(new AnnotatedTreeHeuristic("AvgFirstOccIndexDelta", AvgFirstOccIndexDeltaTreeHeuristic.Builder::new));
+        DFS_Emulation(new AnnotatedTreeHeuristic("DFS Emulation", () -> () -> HeuristicUtils.<PlaceNode>dfs()));
 
         private final AnnotatedTreeHeuristic bth;
 

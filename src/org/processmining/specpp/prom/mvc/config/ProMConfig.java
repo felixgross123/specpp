@@ -24,7 +24,7 @@ public class ProMConfig {
     public boolean initiallyWireSelfLoops;
     CIPRVariant ciprVariant;
     List<FrameworkBridge.AnnotatedPostProcessor> ppPipeline;
-    double tau, delta, p;
+    double tau, delta, p, alpha;
 
     public boolean useETCPrecisionOriented;
 
@@ -56,6 +56,7 @@ public class ProMConfig {
         pc.p = 1.0;
         pc.ppPipeline = ImmutableList.of(FrameworkBridge.BridgedPostProcessors.LPBasedImplicitPlaceRemoval.getBridge(), FrameworkBridge.BridgedPostProcessors.ProMPetrinetConversion.getBridge());
         pc.tau = 1.0;
+        pc.alpha = 1.0;
         pc.delta = -1.0;
         pc.steepness = -1;
         pc.heuristicThreshold = -1;
@@ -82,6 +83,7 @@ public class ProMConfig {
 
     public static ProMConfig getUniwired() {
         ProMConfig pc = getDefault();
+        pc.ciprVariant = CIPRVariant.None;
         pc.compositionStrategy = CompositionStrategy.Uniwired;
         pc.respectWiring = true;
         pc.initiallyWireSelfLoops = true;
@@ -93,6 +95,16 @@ public class ProMConfig {
         ProMConfig pc = getDefault();
         pc.ciprVariant = CIPRVariant.None;
         pc.treeExpansionSetting = TreeExpansionSetting.BFS;
+        pc.useETCPrecisionOriented = true;
+        pc.ppPipeline = ImmutableList.of(FrameworkBridge.BridgedPostProcessors.SelfLoopPlacesMerging.getBridge(), FrameworkBridge.BridgedPostProcessors.LPBasedImplicitPlaceRemoval.getBridge(), FrameworkBridge.BridgedPostProcessors.ProMPetrinetConversion.getBridge());
+        return pc;
+    }
+
+    public static ProMConfig getETCHeuristic() {
+        ProMConfig pc = getDefault();
+        pc.ciprVariant = CIPRVariant.None;
+        pc.treeExpansionSetting = TreeExpansionSetting.Heuristic;
+        pc.treeHeuristic = FrameworkBridge.BridgedHeuristics.AvgAvgFirstOccIndexDelta.getBridge();
         pc.useETCPrecisionOriented = true;
         pc.ppPipeline = ImmutableList.of(FrameworkBridge.BridgedPostProcessors.SelfLoopPlacesMerging.getBridge(), FrameworkBridge.BridgedPostProcessors.LPBasedImplicitPlaceRemoval.getBridge(), FrameworkBridge.BridgedPostProcessors.ProMPetrinetConversion.getBridge());
         return pc;

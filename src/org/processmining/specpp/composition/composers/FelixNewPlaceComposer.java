@@ -37,7 +37,6 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
 
     private final DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping = new DelegatingDataSource<>();
-    private final DelegatingEvaluator<Place, ImplicitnessRating> implicitnessEvaluator = new DelegatingEvaluator<>();
     private final DelegatingEvaluator<Place, VariantMarkingHistories> markingHistoriesEvaluator = new DelegatingEvaluator<>();
     private final EventSupervision<DebugEvent> eventSupervisor = PipeWorks.eventSupervision();
 
@@ -46,7 +45,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     private final PrefixAutomaton prefixAutomaton = new PrefixAutomaton(new PAState());
     private final Map<Activity, Set<Place>> activityToIngoingPlaces = new HashMap<>();
 
-    private final Map<Activity, Integer> activityToEscapingEdges = new HashMap<>();
+    private static final Map<Activity, Integer> activityToEscapingEdges = new HashMap<>();
     private final Map<Activity, Integer> activityToAllowed = new HashMap<>();
 
 
@@ -61,7 +60,6 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
                                .require(EvaluationRequirements.PLACE_MARKING_HISTORY, markingHistoriesEvaluator)
                                 .require(ParameterRequirements.PRECISION_TRHESHOLD, precisionThreshold)
                                .provide(SupervisionRequirements.observable("felix.debug", DebugEvent.class, eventSupervisor));
-        localComponentSystem().require(EvaluationRequirements.PLACE_IMPLICITNESS, implicitnessEvaluator);
     }
 
 
@@ -71,8 +69,6 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         //eventSupervisor.observe(new DebugEvent("read me"));
 
         //System.out.println("Evaluating Place " + candidate);
-
-        Log log = logSource.getData();
 
         if (!checkPrecisionGain(candidate)) {
             // no decrease in EE(a) for any activity a that was reevaluated
@@ -100,7 +96,6 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
             //check implicitness and remove
             addToActivityPlacesMapping(candidate);
-            List<Place> implicitRemoved = new LinkedList<>();
 
             for (Place pPotImpl : potImpl) {
 
@@ -383,8 +378,11 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
             }
         }
         //System.out.println("EE(" + a +") = " + escapingEdges);
-        int[] res = {escapingEdges, allowed};
-        return res;
+        return new int[]{escapingEdges, allowed};
+    }
+
+    public static Map<Activity, Integer> getActivityToEscapingEdges(){
+        return activityToEscapingEdges;
     }
 
 

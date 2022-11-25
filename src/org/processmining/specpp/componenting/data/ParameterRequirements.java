@@ -14,6 +14,7 @@ public class ParameterRequirements {
     public static final ParameterRequirement<TauFitnessThresholds> TAU_FITNESS_THRESHOLDS = parameters("tau_fitness_thresholds", TauFitnessThresholds.class);
 
     public static final ParameterRequirement<PrecisionThreshold> PRECISION_TRHESHOLD = parameters("precision_threshold", PrecisionThreshold.class);
+    public static final ParameterRequirement<TreeHeuristcAlpha> TREEHEURISTIC_ALPHA = parameters("treeheuristic_alpha", TreeHeuristcAlpha.class);
 
     public static final ParameterRequirement<DeltaParameters> DELTA_PARAMETERS = parameters("delta.parameters", DeltaParameters.class);
     public static final ParameterRequirement<SupervisionParameters> SUPERVISION_PARAMETERS = parameters("supervision.parameters", SupervisionParameters.class);

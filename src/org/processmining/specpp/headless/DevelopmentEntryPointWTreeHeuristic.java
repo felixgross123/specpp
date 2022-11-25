@@ -21,10 +21,7 @@ import org.processmining.specpp.datastructures.tree.nodegen.MonotonousPlaceGener
 import org.processmining.specpp.datastructures.tree.nodegen.PlaceNode;
 import org.processmining.specpp.datastructures.tree.nodegen.PlaceState;
 import org.processmining.specpp.evaluation.fitness.AbsolutelyNoFrillsFitnessEvaluator;
-import org.processmining.specpp.evaluation.heuristics.AvgFirstOccIndexDeltaTreeHeuristic;
-import org.processmining.specpp.evaluation.heuristics.DirectlyFollowsHeuristic;
-import org.processmining.specpp.evaluation.heuristics.DirectlyFollowsTreeHeuristic;
-import org.processmining.specpp.evaluation.heuristics.EventuallyFollowsTreeHeuristic;
+import org.processmining.specpp.evaluation.heuristics.*;
 import org.processmining.specpp.evaluation.implicitness.ImplicitnessTestingParameters;
 import org.processmining.specpp.evaluation.implicitness.LPBasedImplicitnessCalculator;
 import org.processmining.specpp.evaluation.markings.LogHistoryMaker;
@@ -73,7 +70,7 @@ public class DevelopmentEntryPointWTreeHeuristic {
 
         EfficientTreeConfiguration.Configurator<Place, PlaceState, PlaceNode> etConfig = Configurators.<Place, PlaceState, PlaceNode, TreeNodeScore>heuristicTree()
                                                                                                       .heuristicExpansion(HeuristicTreeExpansion::new)
-                                                                                                      .heuristic(new DirectlyFollowsTreeHeuristic.Builder())
+                                                                                                      .heuristic(new AvgAvgFirstOccIndexDeltaTreeHeuristic.Builder())
                                                                                                       .childGenerationLogic(new MonotonousPlaceGenerationLogic.Builder())
                                                                                                       .tree(EnumeratingTree::new);
 
@@ -106,11 +103,11 @@ public class DevelopmentEntryPointWTreeHeuristic {
         ParameterProvider parProv = new ParameterProvider() {
             @Override
             public void init() {
-                globalComponentSystem().provide(ParameterRequirements.IMPLICITNESS_TESTING.fulfilWithStatic(new ImplicitnessTestingParameters(ImplicitnessTestingParameters.CIPRVersion.ReplayBased, ImplicitnessTestingParameters.SubLogRestriction.None)))
-                                       .provide(ParameterRequirements.PLACE_GENERATOR_PARAMETERS.fulfilWithStatic(new PlaceGeneratorParameters(7, true, false, false, false)))
+                globalComponentSystem().provide(ParameterRequirements.PLACE_GENERATOR_PARAMETERS.fulfilWithStatic(new PlaceGeneratorParameters(7, true, false, false, false)))
                                        .provide(ParameterRequirements.SUPERVISION_PARAMETERS.fulfilWithStatic(SupervisionParameters.instrumentNone(true, false)))
                         .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(0.9)))
-                        .provide(ParameterRequirements.PRECISION_TRHESHOLD.fulfilWithStatic(new PrecisionThreshold(1.0)));
+                        .provide(ParameterRequirements.PRECISION_TRHESHOLD.fulfilWithStatic(new PrecisionThreshold(1.0)))
+                        .provide(ParameterRequirements.TREEHEURISTIC_ALPHA.fulfilWithStatic(new TreeHeuristcAlpha(0.9)));
             }
         };
 

@@ -87,12 +87,12 @@ public class ConfigurationController extends AbstractStageController {
             else pcCfg.composition(LightweightPlaceComposition::new);
         }
 
-        if (pc.useETCPrecisionOriented)
+        if (pc.useETCPrecisionOriented) {
             pcCfg.terminalComposer(FelixNewPlaceComposer::new);
-        else {
-            if (pc.ciprVariant != ProMConfig.CIPRVariant.None)
-                pcCfg.terminalComposer(isSupervisingEvents ? EventingPlaceComposerWithCIPR::new : PlaceComposerWithCIPR::new);
-            else pcCfg.terminalComposer(PlaceAccepter::new);
+        } else if (pc.ciprVariant != ProMConfig.CIPRVariant.None) {
+            pcCfg.terminalComposer(isSupervisingEvents ? EventingPlaceComposerWithCIPR::new : PlaceComposerWithCIPR::new);
+        } else {
+            pcCfg.terminalComposer(PlaceAccepter::new);
         }
 
         InitializingBuilder<? extends ComposerComponent<Place, AdvancedComposition<Place>, CollectionOfPlaces>, ComposerComponent<Place, AdvancedComposition<Place>, CollectionOfPlaces>> fitnessFilterBuilder = isSupervisingEvents ? EventingPlaceFitnessFilter::new : PlaceFitnessFilter::new;
@@ -164,9 +164,11 @@ public class ConfigurationController extends AbstractStageController {
                     globalComponentSystem().provide(ParameterRequirements.DELTA_PARAMETERS.fulfilWithStatic(new DeltaParameters(pc.delta, pc.steepness)))
                                            .provide(ParameterRequirements.DELTA_COMPOSER_PARAMETERS.fulfilWithStatic(DeltaComposerParameters.getDefault()));
                 }
-                if (pc.useETCPrecisionOriented) globalComponentSystem().provide(ParameterRequirements.PRECISION_TRHESHOLD.fulfilWithStatic(PrecisionThreshold.p(pc.p)));
+                if (pc.useETCPrecisionOriented) globalComponentSystem().provide(ParameterRequirements.PRECISION_TRHESHOLD.fulfilWithStatic(new PrecisionThreshold(pc.p)));
                 if (pc.enforceHeuristicThreshold)
                     globalComponentSystem().provide(ParameterRequirements.TREE_HEURISTIC_THRESHOLD.fulfilWithStatic(new TreeHeuristicThreshold(pc.heuristicThreshold, pc.heuristicThresholdRelation)));
+                if(pc.treeExpansionSetting == ProMConfig.TreeExpansionSetting.Heuristic)
+                    globalComponentSystem().provide(ParameterRequirements.TREEHEURISTIC_ALPHA.fulfilWithStatic((new TreeHeuristcAlpha(pc.alpha))));
             }
         }
 
