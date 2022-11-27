@@ -1,11 +1,8 @@
 package org.processmining.specpp.evaluation.heuristics;
 
-import org.apache.commons.collections4.BidiMap;
 import org.processmining.specpp.componenting.data.DataRequirements;
-import org.processmining.specpp.componenting.data.ParameterRequirements;
 import org.processmining.specpp.componenting.delegators.DelegatingDataSource;
 import org.processmining.specpp.componenting.system.ComponentSystemAwareBuilder;
-import org.processmining.specpp.config.parameters.TreeHeuristcAlpha;
 import org.processmining.specpp.datastructures.encoding.IntEncoding;
 import org.processmining.specpp.datastructures.encoding.IntEncodings;
 import org.processmining.specpp.datastructures.log.Activity;
@@ -13,7 +10,6 @@ import org.processmining.specpp.datastructures.log.Log;
 import org.processmining.specpp.datastructures.log.Variant;
 import org.processmining.specpp.datastructures.log.impls.IndexedVariant;
 import org.processmining.specpp.datastructures.petri.Place;
-import org.processmining.specpp.datastructures.petri.Transition;
 import org.processmining.specpp.datastructures.tree.base.HeuristicStrategy;
 import org.processmining.specpp.datastructures.tree.heuristic.SubtreeMonotonicity;
 import org.processmining.specpp.datastructures.tree.heuristic.TreeNodeScore;
@@ -30,7 +26,6 @@ public class DirectlyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNode
 
     public DirectlyFollowsTreeHeuristic(int[][] dfCounts) {
         this.dfCounts = dfCounts;
-
     }
 
     public static class Builder extends ComponentSystemAwareBuilder<DirectlyFollowsTreeHeuristic> {
@@ -38,7 +33,6 @@ public class DirectlyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNode
 
         private final DelegatingDataSource<Log> rawLog = new DelegatingDataSource<>();
         private final DelegatingDataSource<IntEncodings<Activity>> encAct = new DelegatingDataSource<>();
-
 
         public Builder() {
             globalComponentSystem().require(DataRequirements.RAW_LOG, rawLog).require(DataRequirements.ENC_ACT, encAct);
@@ -59,7 +53,6 @@ public class DirectlyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNode
             }
 
             IntVector frequencies = log.getVariantFrequencies();
-
             for (IndexedVariant indexedVariant : log) {
                 Variant variant = indexedVariant.getVariant();
                 int f = frequencies.get(indexedVariant.getIndex());
@@ -76,11 +69,11 @@ public class DirectlyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNode
                 }
             }
 
-
-
             return new DirectlyFollowsTreeHeuristic(counts);
         }
     }
+
+    protected double[][] eventuallyFollows;
 
     @Override
     public TreeNodeScore computeHeuristic(PlaceNode node) {
@@ -89,9 +82,7 @@ public class DirectlyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNode
                 .flatMap(i -> node.getPlace().postset().streamIndices().map(j -> dfCounts[i][j]))
                 .sum();
 
-        double score = (double) sum / node.getPlace().size();
-
-        return new TreeNodeScore(score);
+        return new TreeNodeScore((double) sum / node.getPlace().size());
     }
 
     @Override

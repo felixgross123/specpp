@@ -3,10 +3,8 @@ package org.processmining.specpp.evaluation.heuristics;
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.processmining.specpp.componenting.data.DataRequirements;
-import org.processmining.specpp.componenting.data.ParameterRequirements;
 import org.processmining.specpp.componenting.delegators.DelegatingDataSource;
 import org.processmining.specpp.componenting.system.ComponentSystemAwareBuilder;
-import org.processmining.specpp.config.parameters.TreeHeuristcAlpha;
 import org.processmining.specpp.datastructures.log.Activity;
 import org.processmining.specpp.datastructures.log.Log;
 import org.processmining.specpp.datastructures.log.Variant;
@@ -19,44 +17,41 @@ import org.processmining.specpp.datastructures.tree.heuristic.SubtreeMonotonicit
 import org.processmining.specpp.datastructures.tree.heuristic.TreeNodeScore;
 import org.processmining.specpp.datastructures.tree.nodegen.PlaceNode;
 import org.processmining.specpp.traits.ZeroOneBounded;
+import org.apache.commons.math3.*;
 
+import javax.print.attribute.standard.Media;
 import java.util.*;
 
-public class MedMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicStrategy<PlaceNode, TreeNodeScore>, ZeroOneBounded, SubtreeMonotonicity.Decreasing {
+public class MedianAvgFirstOccIndexDeltaTreeHeuristic implements HeuristicStrategy<PlaceNode, TreeNodeScore>, ZeroOneBounded, SubtreeMonotonicity.Decreasing {
 
-    private final Map<Activity, Double> activityToMeanFirstOccurrenceIndex;
-    private final BidiMap<Activity, Transition> actTransMapping;
-    private final double alpha;
+    private Map<Activity, Double> activityToAvgFirstOccurrenceIndex;
+    private final DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping;
 
-    private final double maxDelta;
+    int maxDelta;
 
-    private final int maxSize;
-
-    public MedMeanFirstOccIndexDeltaTreeHeuristic(Map<Activity, Double> activityToMeanFirstOccurrenceIndex, BidiMap<Activity, Transition> actTransMapping, double alpha, double maxDelta, int maxSize) {
-        this.activityToMeanFirstOccurrenceIndex = activityToMeanFirstOccurrenceIndex;
+    public MedianAvgFirstOccIndexDeltaTreeHeuristic(Map<Activity, Double> activityToAvgFirstOccurrenceIndex, DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping) {
+        this.activityToAvgFirstOccurrenceIndex = activityToAvgFirstOccurrenceIndex;
         this.actTransMapping = actTransMapping;
-        this.alpha = alpha;
-        this.maxDelta = maxDelta;
-        this.maxSize = maxSize;
+
+
     }
 
-    public static class Builder extends ComponentSystemAwareBuilder<MedMeanFirstOccIndexDeltaTreeHeuristic> {
+    public static class Builder extends ComponentSystemAwareBuilder<MedianAvgFirstOccIndexDeltaTreeHeuristic> {
 
 
 
         private final DelegatingDataSource<Log> rawLog = new DelegatingDataSource<>();
         private final DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping = new DelegatingDataSource<>();
 
-        private final DelegatingDataSource<TreeHeuristcAlpha> alpha = new DelegatingDataSource<>();
 
         public Builder() {
-            globalComponentSystem().require(DataRequirements.RAW_LOG, rawLog).require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping).require(ParameterRequirements.TREEHEURISTIC_ALPHA, alpha);
+            globalComponentSystem().require(DataRequirements.RAW_LOG, rawLog).require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping);
         }
 
         @Override
-        protected MedMeanFirstOccIndexDeltaTreeHeuristic buildIfFullySatisfied() {
+        protected MedianAvgFirstOccIndexDeltaTreeHeuristic buildIfFullySatisfied() {
             Log log = rawLog.getData();
-            Map<Activity, Double> activityToMeanFirstOccurrenceIndex = new HashMap<>();
+            Map<Activity, Double> activityToAvgFirstOccurrenceIndex = new HashMap<>();
             Map<Activity, Integer> activityToFreqSum = new HashMap<>();
 
             for (IndexedVariant indexedVariant : log) {
@@ -68,14 +63,14 @@ public class MedMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicStrategy
                 int j = 0;
                 for (Activity a : variant) {
                     if (!seen.contains(a)) {
-                        if(!activityToMeanFirstOccurrenceIndex.containsKey(a)) {
-                            activityToMeanFirstOccurrenceIndex.put(a, (double) j);
+                        if(!activityToAvgFirstOccurrenceIndex.containsKey(a)) {
+                            activityToAvgFirstOccurrenceIndex.put(a, Double.valueOf(j));
                             activityToFreqSum.put(a,variantFrequency);
                         } else {
                             int freqSumA = activityToFreqSum.get(a);
 
-                            double newAvg = ((double)freqSumA / (double)(freqSumA + variantFrequency)) * activityToMeanFirstOccurrenceIndex.get(a) + ((double)variantFrequency / (double)(freqSumA + variantFrequency)) * j;
-                            activityToMeanFirstOccurrenceIndex.put(a, newAvg);
+                            double newAvg = ((double)freqSumA / (double)(freqSumA + variantFrequency)) * activityToAvgFirstOccurrenceIndex.get(a) + ((double)variantFrequency / (double)(freqSumA + variantFrequency)) * j;
+                            activityToAvgFirstOccurrenceIndex.put(a, newAvg);
                             activityToFreqSum.put(a,freqSumA + variantFrequency);
                         }
                     }
@@ -83,12 +78,8 @@ public class MedMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicStrategy
                     seen.add(a);
                 }
             }
-            double[] maxDeltaA = {activityToMeanFirstOccurrenceIndex.get(Factory.ARTIFICIAL_START), activityToMeanFirstOccurrenceIndex.get(Factory.ARTIFICIAL_END)};
-            double maxDelta = new Median().evaluate(maxDeltaA);
 
-            int maxSize = 2*actTransMapping.getData().size();
-
-            return new MedMeanFirstOccIndexDeltaTreeHeuristic(activityToMeanFirstOccurrenceIndex, actTransMapping.getData(), alpha.getData().getP(), maxDelta, maxSize);
+            return new MedianAvgFirstOccIndexDeltaTreeHeuristic(activityToAvgFirstOccurrenceIndex, actTransMapping);
         }
     }
 
@@ -102,8 +93,8 @@ public class MedMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicStrategy
         double[] avgIndicesPreset = new double[p.preset().size()];
         int i = 0;
         for (Transition t : p.preset()) {
-            Activity a = actTransMapping.getKey(t);
-            avgIndicesPreset[i] = activityToMeanFirstOccurrenceIndex.get(a);
+            Activity a = actTransMapping.getData().getKey(t);
+            avgIndicesPreset[i] = activityToAvgFirstOccurrenceIndex.get(a);
             i++;
         }
         double medianIndexPreset = new Median().evaluate(avgIndicesPreset);
@@ -112,13 +103,13 @@ public class MedMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicStrategy
 
         i = 0;
         for (Transition t : p.postset()) {
-            Activity a = actTransMapping.getKey(t);
-            avgIndicesPostset[i] = activityToMeanFirstOccurrenceIndex.get(a);
+            Activity a = actTransMapping.getData().getKey(t);
+            avgIndicesPostset[i] = activityToAvgFirstOccurrenceIndex.get(a);
             i++;
         }
         double medianIndexPostset= new Median().evaluate(avgIndicesPostset);
 
-        double score = alpha * (Math.abs(medianIndexPostset - medianIndexPreset) / maxDelta) + (1-alpha) * ((double) node.getPlace().size() / maxSize);
+        double score = Math.abs(medianIndexPostset - medianIndexPreset);
         return new TreeNodeScore(score);
     }
 

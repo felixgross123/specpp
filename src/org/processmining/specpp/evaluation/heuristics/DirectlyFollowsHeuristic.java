@@ -1,13 +1,11 @@
 package org.processmining.specpp.evaluation.heuristics;
 
 import org.processmining.specpp.componenting.data.DataRequirements;
-import org.processmining.specpp.componenting.data.ParameterRequirements;
 import org.processmining.specpp.componenting.delegators.DelegatingDataSource;
 import org.processmining.specpp.componenting.evaluation.EvaluationRequirements;
 import org.processmining.specpp.componenting.system.AbstractGlobalComponentSystemUser;
 import org.processmining.specpp.componenting.system.ComponentSystemAwareBuilder;
 import org.processmining.specpp.componenting.traits.ProvidesEvaluators;
-import org.processmining.specpp.config.parameters.TreeHeuristcAlpha;
 import org.processmining.specpp.datastructures.encoding.IntEncoding;
 import org.processmining.specpp.datastructures.encoding.IntEncodings;
 import org.processmining.specpp.datastructures.log.Activity;
@@ -27,7 +25,6 @@ public class DirectlyFollowsHeuristic implements HeuristicStrategy<Place, Candid
     public static class Builder extends ComponentSystemAwareBuilder<DirectlyFollowsHeuristic.Provider> {
 
         private final DelegatingDataSource<Log> rawLog = new DelegatingDataSource<>();
-
         private final DelegatingDataSource<IntEncodings<Activity>> encAct = new DelegatingDataSource<>();
 
         public Builder() {
@@ -88,6 +85,7 @@ public class DirectlyFollowsHeuristic implements HeuristicStrategy<Place, Candid
                        .streamIndices()
                        .flatMap(i -> input.postset().streamIndices().map(j -> dfCounts[i][j]))
                        .sum();
+
         return new CandidateScore((double) sum / input.size());
     }
 
