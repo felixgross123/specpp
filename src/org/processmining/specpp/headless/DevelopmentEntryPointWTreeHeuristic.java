@@ -12,9 +12,7 @@ import org.processmining.specpp.config.parameters.*;
 import org.processmining.specpp.datastructures.petri.CollectionOfPlaces;
 import org.processmining.specpp.datastructures.petri.Place;
 import org.processmining.specpp.datastructures.petri.ProMPetrinetWrapper;
-import org.processmining.specpp.datastructures.tree.base.HeuristicStrategy;
 import org.processmining.specpp.datastructures.tree.base.impls.EnumeratingTree;
-import org.processmining.specpp.datastructures.tree.base.impls.VariableExpansion;
 import org.processmining.specpp.datastructures.tree.heuristic.HeuristicTreeExpansion;
 import org.processmining.specpp.datastructures.tree.heuristic.TreeNodeScore;
 import org.processmining.specpp.datastructures.tree.nodegen.MonotonousPlaceGenerationLogic;
@@ -22,7 +20,6 @@ import org.processmining.specpp.datastructures.tree.nodegen.PlaceNode;
 import org.processmining.specpp.datastructures.tree.nodegen.PlaceState;
 import org.processmining.specpp.evaluation.fitness.AbsolutelyNoFrillsFitnessEvaluator;
 import org.processmining.specpp.evaluation.heuristics.*;
-import org.processmining.specpp.evaluation.implicitness.ImplicitnessTestingParameters;
 import org.processmining.specpp.evaluation.implicitness.LPBasedImplicitnessCalculator;
 import org.processmining.specpp.evaluation.markings.LogHistoryMaker;
 import org.processmining.specpp.orchestra.PreProcessingParameters;
@@ -45,7 +42,7 @@ import org.processmining.specpp.util.PublicPaths;
 public class DevelopmentEntryPointWTreeHeuristic {
 
     public static void main(String[] args) {
-        String path = PublicPaths.REALLIFE_RTFM;
+        String path = PublicPaths.ARTIFICIAL_LONGTERMDEPENDENCIES;
         PreProcessingParameters prePar = new PreProcessingParameters(new XEventNameClassifier(), true, AverageFirstOccurrenceIndex.class);
         InputDataBundle inputData = InputData.loadData(path, prePar).getData();
         SPECppConfigBundle configuration = createConfiguration();
@@ -70,7 +67,7 @@ public class DevelopmentEntryPointWTreeHeuristic {
 
         EfficientTreeConfiguration.Configurator<Place, PlaceState, PlaceNode> etConfig = Configurators.<Place, PlaceState, PlaceNode, TreeNodeScore>heuristicTree()
                                                                                                       .heuristicExpansion(HeuristicTreeExpansion::new)
-                                                                                                      .heuristic(new AvgAvgFirstOccIndexDeltaTreeHeuristic.Builder())
+                                                                                                      .heuristic(new MeanModFirstOccIndexDeltaTreeHeuristic.Builder())
                                                                                                       .childGenerationLogic(new MonotonousPlaceGenerationLogic.Builder())
                                                                                                       .tree(EnumeratingTree::new);
 
