@@ -611,6 +611,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         Uniwired_heuristic(ProMConfig::getUniwiredHeuristic),
         ETC_oriented(ProMConfig::getETC),
         ETC_oriended_heuristic(ProMConfig::getETCHeuristic),
+        //how does last work?
         Last(null),
         Loaded(null);
 
