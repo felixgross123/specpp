@@ -45,7 +45,7 @@ public class FrameworkBridge {
         DirectlyFollows(new AnnotatedTreeHeuristic("Directly Follows", DirectlyFollowsTreeHeuristic.Builder::new)),
 
         MeanMeanFirstOccIndexDelta(new AnnotatedTreeHeuristic("MeanMeanFirstOccIndexDelta", MeanMeanFirstOccIndexDeltaTreeHeuristic.Builder::new)),
-        MeanCrossMeanFirstOccIndexDelta(new AnnotatedTreeHeuristic("MeanCrossMeanFirstOccIndexDelta", MeanMeanFirstOccIndexDeltaTreeHeuristic.Builder::new)),
+        MeanCrossMeanFirstOccIndexDelta(new AnnotatedTreeHeuristic("MeanCrossMeanFirstOccIndexDelta", MeanCrossMeanFirstOccIndexDeltaTreeHeuristic.Builder::new)),
 
 
         /*
