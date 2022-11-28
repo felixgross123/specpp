@@ -529,8 +529,6 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         ETCComposerThreshold.setVisible(ETCPrecisionOrientedComposerCheckBox.isSelected());
         deltaAdaptationLabeledComboBox.setVisible(compositionStrategyComboBox.getSelectedItem() == ProMConfig.CompositionStrategy.TauDelta);
 
-        //TODO Make Checkboxes ETC-Oriented and CIPR mutually exclusive
-
         changeDeltaParametersVisibility();
         revalidate();
         updateReadinessState();
@@ -558,7 +556,9 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         heuristicThresholdInput.setVisible(expansionStrategyComboBox.getSelectedItem() == ProMConfig.TreeExpansionSetting.Heuristic && enforceHeuristicScoreThresholdCheckBox.isSelected());
         treeHeuristicAlpha.setVisible(expansionStrategyComboBox.getSelectedItem() == ProMConfig.TreeExpansionSetting.Heuristic &&
                 (bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.MeanMeanFirstOccIndexDelta.getBridge()
-                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.MedMeanFirstOccIndexDelta.getBridge()
+
+                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.MeanCrossMeanFirstOccIndexDelta.getBridge())
+                /*
                 || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.HarMeanMeanFirstOccIndexDelta.getBridge()
                 || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.MeanMedFirstOccIndexDelta.getBridge()
                 || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.MedMedFirstOccIndexDelta.getBridge()
@@ -566,6 +566,8 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
                 || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.MeanModFirstOccIndexDelta.getBridge()
                 || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.MedModFirstOccIndexDelta.getBridge()
                 || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.HarMeanModFirstOccIndexDelta.getBridge())
+
+                */
         );
         revalidate();
         updateReadinessState();

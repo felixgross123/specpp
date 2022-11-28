@@ -45,7 +45,12 @@ public class FrameworkBridge {
         DirectlyFollows(new AnnotatedTreeHeuristic("Directly Follows", DirectlyFollowsTreeHeuristic.Builder::new)),
 
         MeanMeanFirstOccIndexDelta(new AnnotatedTreeHeuristic("MeanMeanFirstOccIndexDelta", MeanMeanFirstOccIndexDeltaTreeHeuristic.Builder::new)),
+        MeanCrossMeanFirstOccIndexDelta(new AnnotatedTreeHeuristic("MeanCrossMeanFirstOccIndexDelta", MeanMeanFirstOccIndexDeltaTreeHeuristic.Builder::new)),
+
+
+        /*
         MedMeanFirstOccIndexDelta(new AnnotatedTreeHeuristic("MedMeanFirstOccIndexDelta", MedMeanFirstOccIndexDeltaTreeHeuristic.Builder::new)),
+
         HarMeanMeanFirstOccIndexDelta(new AnnotatedTreeHeuristic("HarMeanMeanFirstOccIndexDelta", HarMeanMeanFirstOccIndexDeltaTreeHeuristic.Builder::new)),
 
         MeanMedFirstOccIndexDelta(new AnnotatedTreeHeuristic("MeanMedFirstOccIndexDelta", MeanMedFirstOccIndexDeltaTreeHeuristic.Builder::new)),
@@ -55,7 +60,7 @@ public class FrameworkBridge {
         MeanModFirstOccIndexDelta(new AnnotatedTreeHeuristic("MeanModFirstOccIndexDelta", MeanModFirstOccIndexDeltaTreeHeuristic.Builder::new)),
         MedModFirstOccIndexDelta(new AnnotatedTreeHeuristic("MedModFirstOccIndexDelta", MedModFirstOccIndexDeltaTreeHeuristic.Builder::new)),
         HarMeanModFirstOccIndexDelta(new AnnotatedTreeHeuristic("HarMeanModFirstOccIndexDelta", HarMeanModFirstOccIndexDeltaTreeHeuristic.Builder::new)),
-
+        */
         EventuallyFollows(new AnnotatedTreeHeuristic("Eventually Follows", EventuallyFollowsTreeHeuristic.Builder::new)),
 
         GreedyETCPrecision(new AnnotatedTreeHeuristic("GreedyETCPrecision", GreedyETCPrecisionTreeHeuristic.Builder::new)),

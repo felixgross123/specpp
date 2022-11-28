@@ -67,7 +67,7 @@ public class DevelopmentEntryPointWTreeHeuristic {
 
         EfficientTreeConfiguration.Configurator<Place, PlaceState, PlaceNode> etConfig = Configurators.<Place, PlaceState, PlaceNode, TreeNodeScore>heuristicTree()
                                                                                                       .heuristicExpansion(HeuristicTreeExpansion::new)
-                                                                                                      .heuristic(new MeanModFirstOccIndexDeltaTreeHeuristic.Builder())
+                                                                                                      .heuristic(new MeanCrossMeanFirstOccIndexDeltaTreeHeuristic.Builder())
                                                                                                       .childGenerationLogic(new MonotonousPlaceGenerationLogic.Builder())
                                                                                                       .tree(EnumeratingTree::new);
 
@@ -104,7 +104,7 @@ public class DevelopmentEntryPointWTreeHeuristic {
                                        .provide(ParameterRequirements.SUPERVISION_PARAMETERS.fulfilWithStatic(SupervisionParameters.instrumentNone(true, false)))
                         .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(0.9)))
                         .provide(ParameterRequirements.PRECISION_TRHESHOLD.fulfilWithStatic(new PrecisionThreshold(1.0)))
-                        .provide(ParameterRequirements.TREEHEURISTIC_ALPHA.fulfilWithStatic(new TreeHeuristcAlpha(0.9)));
+                        .provide(ParameterRequirements.TREEHEURISTIC_ALPHA.fulfilWithStatic(new TreeHeuristcAlpha(1.0)));
             }
         };
 
