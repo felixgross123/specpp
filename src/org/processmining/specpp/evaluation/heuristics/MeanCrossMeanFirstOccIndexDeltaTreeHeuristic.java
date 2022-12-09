@@ -5,6 +5,7 @@ import org.processmining.specpp.componenting.data.DataRequirements;
 import org.processmining.specpp.componenting.data.ParameterRequirements;
 import org.processmining.specpp.componenting.delegators.DelegatingDataSource;
 import org.processmining.specpp.componenting.system.ComponentSystemAwareBuilder;
+import org.processmining.specpp.componenting.system.link.AbstractBaseClass;
 import org.processmining.specpp.config.parameters.TreeHeuristcAlpha;
 import org.processmining.specpp.datastructures.log.Activity;
 import org.processmining.specpp.datastructures.log.Log;
@@ -18,10 +19,11 @@ import org.processmining.specpp.datastructures.tree.heuristic.SubtreeMonotonicit
 import org.processmining.specpp.datastructures.tree.heuristic.TreeNodeScore;
 import org.processmining.specpp.datastructures.tree.nodegen.PlaceNode;
 import org.processmining.specpp.traits.ZeroOneBounded;
+import org.processmining.specpp.util.JavaTypingUtils;
 
 import java.util.*;
 
-public class MeanCrossMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicStrategy<PlaceNode, TreeNodeScore>, ZeroOneBounded, SubtreeMonotonicity.Decreasing {
+public class MeanCrossMeanFirstOccIndexDeltaTreeHeuristic extends AbstractBaseClass implements HeuristicStrategy<PlaceNode, TreeNodeScore>, ZeroOneBounded, SubtreeMonotonicity.Decreasing {
 
     private final Map<Activity, Double> activityToMeanFirstOccurrenceIndex;
     private final BidiMap<Activity, Transition> actTransMapping;
@@ -37,10 +39,18 @@ public class MeanCrossMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicSt
         this.alpha = alpha;
         this.maxDelta = maxDelta;
         this.maxSize = maxSize;
+        globalComponentSystem().provide(DataRequirements.dataSource("escaping_edges_scores", JavaTypingUtils.castClass(DelegatingDataSource.class)).fulfilWithStatic(delegatingDataSource));
+
     }
 
-    public static class Builder extends ComponentSystemAwareBuilder<MeanCrossMeanFirstOccIndexDeltaTreeHeuristic> {
+    @Override
+    protected void initSelf() {
 
+    }
+
+    private final DelegatingDataSource<Map<Activity, Integer>> delegatingDataSource = new DelegatingDataSource<>(HashMap::new);
+
+    public static class Builder extends ComponentSystemAwareBuilder<MeanCrossMeanFirstOccIndexDeltaTreeHeuristic> {
 
 
         private final DelegatingDataSource<Log> rawLog = new DelegatingDataSource<>();
@@ -50,8 +60,9 @@ public class MeanCrossMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicSt
 
 
         public Builder() {
-            globalComponentSystem().require(DataRequirements.RAW_LOG, rawLog).require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping)
-                    .require(ParameterRequirements.TREEHEURISTIC_ALPHA, alpha);
+            globalComponentSystem().require(DataRequirements.RAW_LOG, rawLog)
+                                   .require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping)
+                                   .require(ParameterRequirements.TREEHEURISTIC_ALPHA, alpha);
         }
 
         @Override
@@ -69,15 +80,15 @@ public class MeanCrossMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicSt
                 int j = 0;
                 for (Activity a : variant) {
                     if (!seen.contains(a)) {
-                        if(!activityToMeanFirstOccurrenceIndex.containsKey(a)) {
+                        if (!activityToMeanFirstOccurrenceIndex.containsKey(a)) {
                             activityToMeanFirstOccurrenceIndex.put(a, (double) j);
-                            activityToFreqSum.put(a,variantFrequency);
+                            activityToFreqSum.put(a, variantFrequency);
                         } else {
                             int freqSumA = activityToFreqSum.get(a);
 
-                            double newAvg = ((double)freqSumA / (double)(freqSumA + variantFrequency)) * activityToMeanFirstOccurrenceIndex.get(a) + ((double)variantFrequency / (double)(freqSumA + variantFrequency)) * j;
+                            double newAvg = ((double) freqSumA / (double) (freqSumA + variantFrequency)) * activityToMeanFirstOccurrenceIndex.get(a) + ((double) variantFrequency / (double) (freqSumA + variantFrequency)) * j;
                             activityToMeanFirstOccurrenceIndex.put(a, newAvg);
-                            activityToFreqSum.put(a,freqSumA + variantFrequency);
+                            activityToFreqSum.put(a, freqSumA + variantFrequency);
                         }
                     }
                     j++;
@@ -86,9 +97,10 @@ public class MeanCrossMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicSt
             }
 
             double maxDelta = activityToMeanFirstOccurrenceIndex.get(Factory.ARTIFICIAL_END);
-            int maxSize = 2*actTransMapping.getData().size();
+            int maxSize = 2 * actTransMapping.getData().size();
 
-            return new MeanCrossMeanFirstOccIndexDeltaTreeHeuristic(activityToMeanFirstOccurrenceIndex, actTransMapping.getData(), alpha.getData().getP(), maxDelta, maxSize);
+            return new MeanCrossMeanFirstOccIndexDeltaTreeHeuristic(activityToMeanFirstOccurrenceIndex, actTransMapping.getData(), alpha.getData()
+                                                                                                                                        .getP(), maxDelta, maxSize);
         }
     }
 
@@ -96,6 +108,9 @@ public class MeanCrossMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicSt
     @Override
     public TreeNodeScore computeHeuristic(PlaceNode node) {
         Place p = node.getPlace();
+        Map<Activity, Integer> data = delegatingDataSource.getData();
+        System.out.println("MeanCrossMeanFirstOccIndexDeltaTreeHeuristic.computeHeuristic");
+        System.out.println(data);
 
         if (p.isHalfEmpty()) return new TreeNodeScore(0);
 
@@ -112,7 +127,7 @@ public class MeanCrossMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicSt
 
         delta = delta / (node.getPlace().preset().size() * node.getPlace().postset().size());
 
-        double score =  alpha * (delta / maxDelta) + (1-alpha) * ((double) node.getDepth() / maxSize);
+        double score = alpha * (delta / maxDelta) + (1 - alpha) * ((double) node.getDepth() / maxSize);
         return new TreeNodeScore(score);
     }
 

@@ -5,13 +5,19 @@ import org.apache.commons.collections4.MapIterator;
 import org.processmining.specpp.base.AdvancedComposition;
 import org.processmining.specpp.base.impls.AbstractComposer;
 import org.processmining.specpp.componenting.data.DataRequirements;
+import org.processmining.specpp.componenting.data.DataSource;
 import org.processmining.specpp.componenting.data.ParameterRequirements;
+import org.processmining.specpp.componenting.data.StaticDataSource;
+import org.processmining.specpp.componenting.delegators.ConsumingContainer;
 import org.processmining.specpp.componenting.delegators.DelegatingDataSource;
 import org.processmining.specpp.componenting.delegators.DelegatingEvaluator;
 import org.processmining.specpp.componenting.evaluation.EvaluationRequirements;
 import org.processmining.specpp.componenting.supervision.SupervisionRequirements;
+import org.processmining.specpp.composition.events.CandidateAcceptanceRevoked;
+import org.processmining.specpp.composition.events.CandidateAccepted;
+import org.processmining.specpp.composition.events.CandidateCompositionEvent;
+import org.processmining.specpp.composition.events.CandidateRejected;
 import org.processmining.specpp.config.parameters.PrecisionThreshold;
-import org.processmining.specpp.config.parameters.TauFitnessThresholds;
 import org.processmining.specpp.datastructures.encoding.BitEncodedSet;
 import org.processmining.specpp.datastructures.log.Activity;
 import org.processmining.specpp.datastructures.log.Log;
@@ -23,10 +29,10 @@ import org.processmining.specpp.datastructures.petri.Transition;
 import org.processmining.specpp.datastructures.transitionSystems.PAState;
 import org.processmining.specpp.datastructures.transitionSystems.PrefixAutomaton;
 import org.processmining.specpp.datastructures.vectorization.VariantMarkingHistories;
-import org.processmining.specpp.evaluation.implicitness.ImplicitnessRating;
 import org.processmining.specpp.supervision.EventSupervision;
 import org.processmining.specpp.supervision.observations.DebugEvent;
 import org.processmining.specpp.supervision.piping.PipeWorks;
+import org.processmining.specpp.util.JavaTypingUtils;
 
 import java.nio.IntBuffer;
 import java.util.*;
@@ -52,14 +58,19 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     private int currentLevel;
     boolean levelChange;
 
+    private final EventSupervision<CandidateCompositionEvent<Place>> compositionEventSupervision = PipeWorks.eventSupervision();
 
     public FelixNewPlaceComposer(I composition) {
         super(composition, c -> new CollectionOfPlaces(c.toList()));
+        ConsumingContainer<DataSource<DelegatingDataSource<Map<Activity, Integer>>>> cons = new ConsumingContainer<>(del -> del.getData()
+                                                                                                                               .setDelegate(StaticDataSource.of(activityToEscapingEdges)));
+        globalComponentSystem().require(DataRequirements.dataSource("escaping_edges_scores", JavaTypingUtils.castClass(DelegatingDataSource.class)), cons);
         globalComponentSystem().require(DataRequirements.RAW_LOG, logSource)
                                .require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping)
                                .require(EvaluationRequirements.PLACE_MARKING_HISTORY, markingHistoriesEvaluator)
-                                .require(ParameterRequirements.PRECISION_TRHESHOLD, precisionThreshold)
+                               .require(ParameterRequirements.PRECISION_TRHESHOLD, precisionThreshold)
                                .provide(SupervisionRequirements.observable("felix.debug", DebugEvent.class, eventSupervisor));
+        globalComponentSystem().provide(SupervisionRequirements.observable("composer.events", JavaTypingUtils.castClass(CandidateCompositionEvent.class), compositionEventSupervision));
     }
 
 
@@ -87,10 +98,10 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
             BitEncodedSet<Transition> candidateOut = candidate.postset();
             Set<Activity> activitiesToRevealuate = new HashSet<>();
-            for (Transition t: candidateOut) {
+            for (Transition t : candidateOut) {
                 activitiesToRevealuate.add(actTransMapping.getData().getKey(t));
             }
-            for(Activity a : activitiesToRevealuate){
+            for (Activity a : activitiesToRevealuate) {
                 potImpl.addAll(activityToIngoingPlaces.get(a));
             }
 
@@ -117,7 +128,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     public boolean checkPrecisionGain(Place p) {
         BitEncodedSet<Transition> candidateOut = p.postset();
         Set<Activity> activitiesToRevealuate = new HashSet<>();
-        for (Transition t: candidateOut) {
+        for (Transition t : candidateOut) {
             activitiesToRevealuate.add(actTransMapping.getData().getKey(t));
         }
 
@@ -148,7 +159,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
         BitEncodedSet<Transition> pPotImplOut = p.postset();
         Set<Activity> activitiesToReevaluatePPotImpl = new HashSet<>();
-        for (Transition t: pPotImplOut) {
+        for (Transition t : pPotImplOut) {
             activitiesToReevaluatePPotImpl.add(actTransMapping.getData().getKey(t));
         }
 
@@ -179,6 +190,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     protected void acceptanceRevoked(Place candidate) {
         //update ActivityPlaceMapping
         removeFromActivityPlacesMapping(candidate);
+        compositionEventSupervision.observe(new CandidateAcceptanceRevoked<>(candidate));
     }
 
     @Override
@@ -187,21 +199,28 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         addToActivityPlacesMapping(candidate);
 
         //check levelChange
-        if(candidate.size() > currentLevel) {
+        if (candidate.size() > currentLevel) {
             currentLevel = candidate.size();
             levelChange = true;
         }
+
+        System.out.println("FelixNewPlaceComposer.candidateAccepted");
+        System.out.println(activityToEscapingEdges);
+        compositionEventSupervision.observe(new CandidateAccepted<>(candidate));
     }
 
     @Override
     protected void candidateRejected(Place candidate) {
 
+        System.out.println("FelixNewPlaceComposer.candidateAccepted");
+        System.out.println(activityToEscapingEdges);
         //check levelChange
-        if(candidate.size() > currentLevel) {
+        if (candidate.size() > currentLevel) {
             currentLevel = candidate.size();
             levelChange = true;
         }
 
+        compositionEventSupervision.observe(new CandidateRejected<>(candidate));
     }
 
 
@@ -209,7 +228,6 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     public void candidatesAreExhausted() {
 
     }
-
 
 
     @Override
@@ -220,21 +238,21 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
         // Build Prefix-Automaton
         Log log = logSource.getData();
-        for(IndexedVariant indexedVariant : log) {
+        for (IndexedVariant indexedVariant : log) {
             prefixAutomaton.addVariant(indexedVariant.getVariant());
         }
 
         // Init ActivityPlaceMapping
         MapIterator<Activity, Transition> mapIterator = actTransMapping.get().mapIterator();
-        while(mapIterator.hasNext()) {
+        while (mapIterator.hasNext()) {
             Activity a = mapIterator.next();
             activityToIngoingPlaces.put(a, new HashSet<>());
         }
 
         // Init EscapingEdges
         Set<Activity> activities = actTransMapping.getData().keySet();
-        for(Activity a : activities) {
-            if(!a.equals(Factory.ARTIFICIAL_START)) {
+        for (Activity a : activities) {
+            if (!a.equals(Factory.ARTIFICIAL_START)) {
                 int[] evalRes = evaluateEscapingEdges(a);
                 int EE = evalRes[0];
                 int allowed = evalRes[1];
@@ -244,15 +262,15 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         }
     }
 
-    private void addToActivityPlacesMapping(Place p){
-        for(Transition t : p.postset()) {
+    private void addToActivityPlacesMapping(Place p) {
+        for (Transition t : p.postset()) {
             Set<Place> tIn = activityToIngoingPlaces.get(actTransMapping.get().getKey(t));
             tIn.add(p);
         }
     }
 
-    private void removeFromActivityPlacesMapping(Place p){
-        for(Transition t : p.postset()) {
+    private void removeFromActivityPlacesMapping(Place p) {
+        for (Transition t : p.postset()) {
             Activity a = actTransMapping.get().getKey(t);
             Set<Place> tIn = activityToIngoingPlaces.get(a);
             tIn.remove(p);
@@ -264,14 +282,14 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     public boolean isFinished() {
 
         //only check on levelChange
-        if(levelChange) {
+        if (levelChange) {
             levelChange = false;
-            if(optimalPrecisionReached()){
+            if (optimalPrecisionReached()) {
                 return true;
             } else {
                 return checkPrecisionThreshold(precisionThreshold.get().getP());
             }
-        }else{
+        } else {
             return false;
         }
     }
@@ -286,9 +304,10 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
             allowed += i;
         }
 
-        double precisionApprox = (1 - ((double)EE/allowed));
-        if(precisionApprox > p) {
-            System.out.println("PREMATURE ABORT precision threshold " + precisionThreshold.get().getP() + " reached after level " + (currentLevel-1));
+        double precisionApprox = (1 - ((double) EE / allowed));
+        if (precisionApprox > p) {
+            System.out.println("PREMATURE ABORT precision threshold " + precisionThreshold.get()
+                                                                                          .getP() + " reached after level " + (currentLevel - 1));
             return true;
         } else {
             return false;
@@ -297,12 +316,12 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     }
 
     public boolean optimalPrecisionReached() {
-        for(int i : activityToEscapingEdges.values()) {
-            if(i != 0){
+        for (int i : activityToEscapingEdges.values()) {
+            if (i != 0) {
                 return false;
             }
         }
-        System.out.println("PREMATURE ABORT optimal precision reached after level " + (currentLevel-1));
+        System.out.println("PREMATURE ABORT optimal precision reached after level " + (currentLevel - 1));
         return true;
     }
 
@@ -312,15 +331,15 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         int allowed = 0;
         Log log = logSource.getData();
 
-        if(activityToIngoingPlaces.get(a).isEmpty()) {
+        if (activityToIngoingPlaces.get(a).isEmpty()) {
             // calculate initial score
 
-            for(IndexedVariant variant : log) {
+            for (IndexedVariant variant : log) {
                 int vIndex = variant.getIndex();
 
-                for(int i=0; i<variant.getVariant().getLength(); i++) {
+                for (int i = 0; i < variant.getVariant().getLength(); i++) {
                     allowed += log.getVariantFrequency(vIndex);
-                    if(!variant.getVariant().getAt(i).equals(a)) {
+                    if (!variant.getVariant().getAt(i).equals(a)) {
                         escapingEdges += log.getVariantFrequency(vIndex);
                     }
                 }
@@ -332,13 +351,13 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
             // collect markingHistories
             LinkedList<VariantMarkingHistories> markingHistories = new LinkedList<>();
-            for(Place p : prerequisites) {
+            for (Place p : prerequisites) {
                 markingHistories.add(markingHistoriesEvaluator.eval(p));
             }
 
             //iterate log: variant by variant, activity by activity
 
-            for(IndexedVariant variant : log) {
+            for (IndexedVariant variant : log) {
 
                 int vIndex = variant.getIndex();
                 int length = variant.getVariant().getLength();
@@ -354,18 +373,18 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
                     boolean isAllowedO = true;
 
-                    for(VariantMarkingHistories h : markingHistories) {
+                    for (VariantMarkingHistories h : markingHistories) {
                         //check if column = 1 f.a. p in prerequites --> activity a is allowed
                         IntBuffer buffer = h.getAt(vIndex);
                         int p = buffer.position();
 
-                        if(buffer.get(p + j) == 0) {
+                        if (buffer.get(p + j) == 0) {
                             isAllowedO = false;
                             break;
                         }
                     }
 
-                    if(isAllowedO) {
+                    if (isAllowedO) {
                         allowed += log.getVariantFrequency(vIndex);
 
                         //check if a is reflected
@@ -381,10 +400,9 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         return new int[]{escapingEdges, allowed};
     }
 
-    public static Map<Activity, Integer> getActivityToEscapingEdges(){
+    public static Map<Activity, Integer> getActivityToEscapingEdges() {
         return activityToEscapingEdges;
     }
-
 
 
 }

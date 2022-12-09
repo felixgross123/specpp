@@ -501,7 +501,6 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         pc.initiallyWireSelfLoops = initiallyWireSelfLoopsCheckBox.isVisible() && initiallyWireSelfLoopsCheckBox.isSelected();
         pc.discoveryTimeLimit = discoveryTimeLimitInput.getInput();
         pc.totalTimeLimit = totalTimeLimitInput.getInput();
-
         // COLLECTION COMPLETE
 
         // VALIDATING COMPLETENESS

@@ -15,6 +15,7 @@ import org.processmining.specpp.datastructures.petri.ProMPetrinetWrapper;
 import org.processmining.specpp.datastructures.tree.base.impls.EnumeratingTree;
 import org.processmining.specpp.datastructures.tree.heuristic.HeuristicTreeExpansion;
 import org.processmining.specpp.datastructures.tree.heuristic.TreeNodeScore;
+import org.processmining.specpp.datastructures.tree.heuristic.UpdatableTreeExpansion;
 import org.processmining.specpp.datastructures.tree.nodegen.MonotonousPlaceGenerationLogic;
 import org.processmining.specpp.datastructures.tree.nodegen.PlaceNode;
 import org.processmining.specpp.datastructures.tree.nodegen.PlaceState;
@@ -66,7 +67,7 @@ public class DevelopmentEntryPointWTreeHeuristic {
 
 
         EfficientTreeConfiguration.Configurator<Place, PlaceState, PlaceNode> etConfig = Configurators.<Place, PlaceState, PlaceNode, TreeNodeScore>heuristicTree()
-                                                                                                      .heuristicExpansion(HeuristicTreeExpansion::new)
+                                                                                                      .heuristicExpansion(UpdatableTreeExpansion::new)
                                                                                                       .heuristic(new MeanCrossMeanFirstOccIndexDeltaTreeHeuristic.Builder())
                                                                                                       .childGenerationLogic(new MonotonousPlaceGenerationLogic.Builder())
                                                                                                       .tree(EnumeratingTree::new);
