@@ -1,8 +1,10 @@
 package org.processmining.specpp.evaluation.heuristics;
 
 import org.processmining.specpp.componenting.data.DataRequirements;
+import org.processmining.specpp.componenting.data.ParameterRequirements;
 import org.processmining.specpp.componenting.delegators.DelegatingDataSource;
 import org.processmining.specpp.componenting.system.ComponentSystemAwareBuilder;
+import org.processmining.specpp.config.parameters.TreeHeuristcAlpha;
 import org.processmining.specpp.datastructures.encoding.IntEncoding;
 import org.processmining.specpp.datastructures.encoding.IntEncodings;
 import org.processmining.specpp.datastructures.log.Activity;
@@ -22,8 +24,11 @@ import java.util.PrimitiveIterator;
 
 public class EventuallyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNode, TreeNodeScore>, ZeroOneBounded, SubtreeMonotonicity.Decreasing {
 
-    public EventuallyFollowsTreeHeuristic(double[][] eventuallyFollows) {
+    public EventuallyFollowsTreeHeuristic(double[][] eventuallyFollows, double alpha, double maxEF, int maxSize) {
         this.eventuallyFollows = eventuallyFollows;
+        this.alpha = alpha;
+        this.maxEF = maxEF;
+        this.maxSize = maxSize;
     }
 
     public static class Builder extends ComponentSystemAwareBuilder<EventuallyFollowsTreeHeuristic> {
@@ -31,9 +36,10 @@ public class EventuallyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNo
 
         private final DelegatingDataSource<Log> rawLog = new DelegatingDataSource<>();
         private final DelegatingDataSource<IntEncodings<Activity>> encAct = new DelegatingDataSource<>();
+        private final DelegatingDataSource<TreeHeuristcAlpha> alpha = new DelegatingDataSource<>();
 
         public Builder() {
-            globalComponentSystem().require(DataRequirements.RAW_LOG, rawLog).require(DataRequirements.ENC_ACT, encAct);
+            globalComponentSystem().require(DataRequirements.RAW_LOG, rawLog).require(DataRequirements.ENC_ACT, encAct).require(ParameterRequirements.TREEHEURISTIC_ALPHA, alpha);
         }
 
         @Override
@@ -88,11 +94,27 @@ public class EventuallyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNo
                 }
             }
 
-            return new EventuallyFollowsTreeHeuristic(ef);
+            //search for max EF value
+            double maxEF = 0;
+
+            for (double[] rows : ef) {
+                for (double entry : rows) {
+                    if (entry > maxEF) {
+                        maxEF = entry;
+                    }
+                }
+            }
+
+            int maxSize = encAct.getData().getPresetEncoding().size() + encAct.getData().getPostsetEncoding().size();
+
+            return new EventuallyFollowsTreeHeuristic(ef, alpha.getData().getAlpha(), maxEF, maxSize);
         }
     }
 
     protected double[][] eventuallyFollows;
+    private final double alpha;
+    private final double maxEF;
+    private final int maxSize;
 
     @Override
     public TreeNodeScore computeHeuristic(PlaceNode node) {
@@ -112,7 +134,9 @@ public class EventuallyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNo
         }
         assert 0 <= min;
         assert min < Integer.MAX_VALUE;
-        return new TreeNodeScore(min);
+
+        double score = alpha * (min / maxEF) + (1-alpha) * (1 - ((double) node.getPlace().size() / maxSize));
+        return new TreeNodeScore(score);
     }
 
     @Override

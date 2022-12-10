@@ -6,6 +6,7 @@ import org.processmining.specpp.componenting.data.ParameterRequirements;
 import org.processmining.specpp.componenting.delegators.DelegatingDataSource;
 import org.processmining.specpp.componenting.system.ComponentSystemAwareBuilder;
 import org.processmining.specpp.config.parameters.TreeHeuristcAlpha;
+import org.processmining.specpp.datastructures.encoding.IntEncodings;
 import org.processmining.specpp.datastructures.log.Activity;
 import org.processmining.specpp.datastructures.log.Log;
 import org.processmining.specpp.datastructures.log.Variant;
@@ -19,6 +20,7 @@ import org.processmining.specpp.datastructures.tree.heuristic.TreeNodeScore;
 import org.processmining.specpp.datastructures.tree.nodegen.PlaceNode;
 import org.processmining.specpp.traits.ZeroOneBounded;
 
+import javax.xml.crypto.Data;
 import java.util.*;
 
 public class MeanMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicStrategy<PlaceNode, TreeNodeScore>, ZeroOneBounded, SubtreeMonotonicity.Decreasing {
@@ -45,12 +47,12 @@ public class MeanMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicStrateg
 
         private final DelegatingDataSource<Log> rawLog = new DelegatingDataSource<>();
         private final DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping = new DelegatingDataSource<>();
-
+        private final DelegatingDataSource<IntEncodings<Activity>> encAct = new DelegatingDataSource<>();
         private final DelegatingDataSource<TreeHeuristcAlpha> alpha = new DelegatingDataSource<>();
 
 
         public Builder() {
-            globalComponentSystem().require(DataRequirements.RAW_LOG, rawLog).require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping)
+            globalComponentSystem().require(DataRequirements.RAW_LOG, rawLog).require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping).require(DataRequirements.ENC_ACT, encAct)
                     .require(ParameterRequirements.TREEHEURISTIC_ALPHA, alpha);
         }
 
@@ -86,9 +88,9 @@ public class MeanMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicStrateg
             }
 
             double maxDelta = activityToMeanFirstOccurrenceIndex.get(Factory.ARTIFICIAL_END);
-            int maxSize = 2*actTransMapping.getData().size();
+            int maxSize = encAct.getData().getPresetEncoding().size() + encAct.getData().getPostsetEncoding().size();
 
-            return new MeanMeanFirstOccIndexDeltaTreeHeuristic(activityToMeanFirstOccurrenceIndex, actTransMapping.getData(), alpha.getData().getP(), maxDelta, maxSize);
+            return new MeanMeanFirstOccIndexDeltaTreeHeuristic(activityToMeanFirstOccurrenceIndex, actTransMapping.getData(), alpha.getData().getAlpha(), maxDelta, maxSize);
         }
     }
 
@@ -113,7 +115,7 @@ public class MeanMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicStrateg
         }
         avgIndexPostset /= p.postset().size();
 
-        double score =  alpha * (Math.abs(avgIndexPostset - avgIndexPreset) / maxDelta) + (1-alpha) * ((double) node.getDepth() / maxSize);
+        double score =  alpha * (Math.abs(avgIndexPostset - avgIndexPreset) / maxDelta) + (1-alpha) * ((double) node.getPlace().size() / maxSize);
         return new TreeNodeScore(score);
     }
 

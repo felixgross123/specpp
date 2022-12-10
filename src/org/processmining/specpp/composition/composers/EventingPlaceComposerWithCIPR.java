@@ -11,7 +11,7 @@ import org.processmining.specpp.supervision.EventSupervision;
 import org.processmining.specpp.supervision.piping.PipeWorks;
 import org.processmining.specpp.util.JavaTypingUtils;
 
-public class EventingPlaceComposerWithCIPR<I extends AdvancedComposition<Place>> extends PlaceComposerWithCIPR<I> {
+public class  EventingPlaceComposerWithCIPR<I extends AdvancedComposition<Place>> extends PlaceComposerWithCIPR<I> {
     private final EventSupervision<CandidateCompositionEvent<Place>> compositionEventSupervision = PipeWorks.eventSupervision();
 
     public EventingPlaceComposerWithCIPR(I composition) {

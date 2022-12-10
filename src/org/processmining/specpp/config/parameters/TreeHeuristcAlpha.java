@@ -2,26 +2,26 @@ package org.processmining.specpp.config.parameters;
 
 public class TreeHeuristcAlpha implements Parameters {
 
-    public static TreeHeuristcAlpha p(double p) {
-        return new TreeHeuristcAlpha(p);
+    public static TreeHeuristcAlpha alpha(double alpha) {
+        return new TreeHeuristcAlpha(alpha);
     }
 
     public static TreeHeuristcAlpha getDefault() {
-        return p(1.0);
+        return alpha(1.0);
     }
 
-    private final double p;
+    private final double alpha;
 
     public TreeHeuristcAlpha(double p) {
-        this.p = p;
+        this.alpha = p;
     }
 
-    public double getP() {
-        return p;
+    public double getAlpha() {
+        return alpha;
     }
 
     @Override
     public String toString() {
-        return "PrecisionThreshold(p=" + p + ")";
+        return "PrecisionThreshold(p=" + alpha + ")";
     }
 }

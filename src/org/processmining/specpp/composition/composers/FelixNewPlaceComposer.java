@@ -5,11 +5,18 @@ import org.apache.commons.collections4.MapIterator;
 import org.processmining.specpp.base.AdvancedComposition;
 import org.processmining.specpp.base.impls.AbstractComposer;
 import org.processmining.specpp.componenting.data.DataRequirements;
+import org.processmining.specpp.componenting.data.DataSource;
 import org.processmining.specpp.componenting.data.ParameterRequirements;
+import org.processmining.specpp.componenting.data.StaticDataSource;
+import org.processmining.specpp.componenting.delegators.ConsumingContainer;
 import org.processmining.specpp.componenting.delegators.DelegatingDataSource;
 import org.processmining.specpp.componenting.delegators.DelegatingEvaluator;
 import org.processmining.specpp.componenting.evaluation.EvaluationRequirements;
 import org.processmining.specpp.componenting.supervision.SupervisionRequirements;
+import org.processmining.specpp.composition.events.CandidateAcceptanceRevoked;
+import org.processmining.specpp.composition.events.CandidateAccepted;
+import org.processmining.specpp.composition.events.CandidateCompositionEvent;
+import org.processmining.specpp.composition.events.CandidateRejected;
 import org.processmining.specpp.config.parameters.PrecisionThreshold;
 import org.processmining.specpp.config.parameters.TauFitnessThresholds;
 import org.processmining.specpp.datastructures.encoding.BitEncodedSet;
@@ -27,39 +34,41 @@ import org.processmining.specpp.evaluation.implicitness.ImplicitnessRating;
 import org.processmining.specpp.supervision.EventSupervision;
 import org.processmining.specpp.supervision.observations.DebugEvent;
 import org.processmining.specpp.supervision.piping.PipeWorks;
+import org.processmining.specpp.util.JavaTypingUtils;
 
+import javax.xml.crypto.Data;
 import java.nio.IntBuffer;
 import java.util.*;
 
 public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends AbstractComposer<Place, I, CollectionOfPlaces> {
 
     private final DelegatingDataSource<Log> logSource = new DelegatingDataSource<>();
-
-
     private final DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping = new DelegatingDataSource<>();
     private final DelegatingEvaluator<Place, VariantMarkingHistories> markingHistoriesEvaluator = new DelegatingEvaluator<>();
     private final EventSupervision<DebugEvent> eventSupervisor = PipeWorks.eventSupervision();
-
     private final DelegatingDataSource<PrecisionThreshold> precisionThreshold = new DelegatingDataSource<>();
-
     private final PrefixAutomaton prefixAutomaton = new PrefixAutomaton(new PAState());
     private final Map<Activity, Set<Place>> activityToIngoingPlaces = new HashMap<>();
-
-    private static final Map<Activity, Integer> activityToEscapingEdges = new HashMap<>();
+    private final Map<Activity, Integer> activityToEscapingEdges = new HashMap<>();
     private final Map<Activity, Integer> activityToAllowed = new HashMap<>();
-
-
     private int currentLevel;
     boolean levelChange;
-
+    private final EventSupervision<CandidateCompositionEvent<Place>> compositionEventSupervision = PipeWorks.eventSupervision();
 
     public FelixNewPlaceComposer(I composition) {
         super(composition, c -> new CollectionOfPlaces(c.toList()));
+
+        ConsumingContainer<DataSource<DelegatingDataSource<Map<Activity, Integer>>>> consActivitiesToEscapingEdges = new ConsumingContainer<>(del -> del.getData().setDelegate(StaticDataSource.of(activityToEscapingEdges)));
+        globalComponentSystem().require(DataRequirements.dataSource("activitiesToEscapingEdges_Map", JavaTypingUtils.castClass(DelegatingDataSource.class)), consActivitiesToEscapingEdges);
+
+
         globalComponentSystem().require(DataRequirements.RAW_LOG, logSource)
                                .require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping)
                                .require(EvaluationRequirements.PLACE_MARKING_HISTORY, markingHistoriesEvaluator)
                                 .require(ParameterRequirements.PRECISION_TRHESHOLD, precisionThreshold)
                                .provide(SupervisionRequirements.observable("felix.debug", DebugEvent.class, eventSupervisor));
+
+        globalComponentSystem().provide(SupervisionRequirements.observable("composer.events", JavaTypingUtils.castClass(CandidateCompositionEvent.class), compositionEventSupervision));
     }
 
 
@@ -179,6 +188,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     protected void acceptanceRevoked(Place candidate) {
         //update ActivityPlaceMapping
         removeFromActivityPlacesMapping(candidate);
+        compositionEventSupervision.observe(new CandidateAcceptanceRevoked<>(candidate));
     }
 
     @Override
@@ -190,6 +200,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         if(candidate.size() > currentLevel) {
             currentLevel = candidate.size();
             levelChange = true;
+            compositionEventSupervision.observe(new CandidateAccepted<>(candidate));
         }
     }
 
@@ -201,6 +212,8 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
             currentLevel = candidate.size();
             levelChange = true;
         }
+
+        compositionEventSupervision.observe(new CandidateRejected<>(candidate));
 
     }
 
@@ -381,9 +394,6 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         return new int[]{escapingEdges, allowed};
     }
 
-    public static Map<Activity, Integer> getActivityToEscapingEdges(){
-        return activityToEscapingEdges;
-    }
 
 
 

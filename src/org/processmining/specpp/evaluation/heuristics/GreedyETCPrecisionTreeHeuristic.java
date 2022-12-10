@@ -4,6 +4,7 @@ import org.apache.commons.collections4.BidiMap;
 import org.processmining.specpp.componenting.data.DataRequirements;
 import org.processmining.specpp.componenting.delegators.DelegatingDataSource;
 import org.processmining.specpp.componenting.system.ComponentSystemAwareBuilder;
+import org.processmining.specpp.componenting.system.link.AbstractBaseClass;
 import org.processmining.specpp.composition.composers.FelixNewPlaceComposer;
 import org.processmining.specpp.datastructures.log.Activity;
 import org.processmining.specpp.datastructures.log.Log;
@@ -17,28 +18,32 @@ import org.processmining.specpp.datastructures.tree.heuristic.SubtreeMonotonicit
 import org.processmining.specpp.datastructures.tree.heuristic.TreeNodeScore;
 import org.processmining.specpp.datastructures.tree.nodegen.PlaceNode;
 import org.processmining.specpp.traits.ZeroOneBounded;
+import org.processmining.specpp.util.JavaTypingUtils;
 
 import java.util.*;
 
-public class GreedyETCPrecisionTreeHeuristic implements HeuristicStrategy<PlaceNode, TreeNodeScore>, ZeroOneBounded, SubtreeMonotonicity.Decreasing {
+public class GreedyETCPrecisionTreeHeuristic extends AbstractBaseClass implements HeuristicStrategy<PlaceNode, TreeNodeScore>, ZeroOneBounded, SubtreeMonotonicity.Decreasing {
 
     private final DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping;
 
-    private final  Map<Activity, Integer> activityToEscapingEdges;
+    private final DelegatingDataSource<Map<Activity, Integer>> delegatingDataSource = new DelegatingDataSource<>(HashMap::new);
 
 
-    int maxDelta;
-
-    public GreedyETCPrecisionTreeHeuristic( DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping,  Map<Activity, Integer> activityToEscapingEdges) {
+    public GreedyETCPrecisionTreeHeuristic( DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping) {
         this.actTransMapping = actTransMapping;
-        this.activityToEscapingEdges = activityToEscapingEdges;
+        globalComponentSystem().provide(DataRequirements.dataSource("activitiesToEscapingEdges_Map", JavaTypingUtils.castClass(DelegatingDataSource.class)).fulfilWithStatic(delegatingDataSource));
+    }
+
+    @Override
+    protected void initSelf() {
+
     }
 
     public static class Builder extends ComponentSystemAwareBuilder<GreedyETCPrecisionTreeHeuristic> {
 
 
 
-        private final DelegatingDataSource<Log> rawLog = new DelegatingDataSource<>();
+        final DelegatingDataSource<Log> rawLog = new DelegatingDataSource<>();
         private final DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping = new DelegatingDataSource<>();
 
 
@@ -48,7 +53,7 @@ public class GreedyETCPrecisionTreeHeuristic implements HeuristicStrategy<PlaceN
 
         @Override
         protected GreedyETCPrecisionTreeHeuristic buildIfFullySatisfied() {
-            return new GreedyETCPrecisionTreeHeuristic(actTransMapping, FelixNewPlaceComposer.getActivityToEscapingEdges());
+            return new GreedyETCPrecisionTreeHeuristic(actTransMapping);
         }
     }
 
@@ -56,6 +61,7 @@ public class GreedyETCPrecisionTreeHeuristic implements HeuristicStrategy<PlaceN
     @Override
     public TreeNodeScore computeHeuristic(PlaceNode node) {
         Place p = node.getPlace();
+        Map<Activity, Integer> activityToEscapingEdges = delegatingDataSource.getData();
 
         if(p.isHalfEmpty()) {
             return new TreeNodeScore(Double.MAX_VALUE);

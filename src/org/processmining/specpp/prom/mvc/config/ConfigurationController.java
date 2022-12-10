@@ -24,6 +24,7 @@ import org.processmining.specpp.datastructures.tree.nodegen.PlaceState;
 import org.processmining.specpp.evaluation.fitness.ReplayComputationParameters;
 import org.processmining.specpp.evaluation.heuristics.DirectlyFollowsHeuristic;
 import org.processmining.specpp.evaluation.heuristics.TreeHeuristicThreshold;
+import org.processmining.specpp.evaluation.heuristics.UpdateGreedyETCPrecisonTreeHeuristic;
 import org.processmining.specpp.evaluation.implicitness.ImplicitnessTestingParameters;
 import org.processmining.specpp.evaluation.implicitness.LPBasedImplicitnessCalculator;
 import org.processmining.specpp.evaluation.markings.LogHistoryMaker;
@@ -123,10 +124,15 @@ public class ConfigurationController extends AbstractStageController {
         if (pc.treeExpansionSetting == ProMConfig.TreeExpansionSetting.Heuristic) {
             HeuristicTreeConfiguration.Configurator<Place, PlaceState, PlaceNode, TreeNodeScore> htCfg = new HeuristicTreeConfiguration.Configurator<>();
             htCfg.heuristic(pc.treeHeuristic.getBuilder());
-            if (pc.enforceHeuristicThreshold)
-                htCfg.heuristicExpansion(isSupervisingEvents ? EventingDiscriminatingHeuristicTreeExpansion::new : DiscriminatingHeuristicTreeExpansion::new);
-            else
-                htCfg.heuristicExpansion(isSupervisingEvents ? EventingHeuristicTreeExpansion::new : HeuristicTreeExpansion::new);
+
+            if(pc.treeHeuristic == FrameworkBridge.BridgedHeuristics.GreedyETCPrecision.getBridge()) {
+                htCfg.heuristicExpansion(UpdateGreedyETCPrecisonTreeHeuristic::new);
+            }else {
+                if (pc.enforceHeuristicThreshold)
+                    htCfg.heuristicExpansion(isSupervisingEvents ? EventingDiscriminatingHeuristicTreeExpansion::new : DiscriminatingHeuristicTreeExpansion::new);
+                else
+                    htCfg.heuristicExpansion(isSupervisingEvents ? EventingHeuristicTreeExpansion::new : HeuristicTreeExpansion::new);
+            }
             htCfg.tree(isSupervisingEvents ? EventingEnumeratingTree::new : EnumeratingTree::new);
             htCfg.childGenerationLogic(new MonotonousPlaceGenerationLogic.Builder());
             etCfg = htCfg;
@@ -167,7 +173,12 @@ public class ConfigurationController extends AbstractStageController {
                 if (pc.useETCPrecisionOriented) globalComponentSystem().provide(ParameterRequirements.PRECISION_TRHESHOLD.fulfilWithStatic(new PrecisionThreshold(pc.p)));
                 if (pc.enforceHeuristicThreshold)
                     globalComponentSystem().provide(ParameterRequirements.TREE_HEURISTIC_THRESHOLD.fulfilWithStatic(new TreeHeuristicThreshold(pc.heuristicThreshold, pc.heuristicThresholdRelation)));
-                if(pc.treeExpansionSetting == ProMConfig.TreeExpansionSetting.Heuristic)
+                if(pc.treeExpansionSetting == ProMConfig.TreeExpansionSetting.Heuristic &&
+                        (pc.treeHeuristic == FrameworkBridge.BridgedHeuristics.MeanMeanFirstOccIndexDelta.getBridge()
+                        || pc.treeHeuristic  == FrameworkBridge.BridgedHeuristics.MeanCrossMeanFirstOccIndexDelta.getBridge()
+                        || pc.treeHeuristic  == FrameworkBridge.BridgedHeuristics.DirectlyFollows.getBridge()
+                        || pc.treeHeuristic  == FrameworkBridge.BridgedHeuristics.EventuallyFollows.getBridge())
+                )
                     globalComponentSystem().provide(ParameterRequirements.TREEHEURISTIC_ALPHA.fulfilWithStatic((new TreeHeuristcAlpha(pc.alpha))));
             }
         }

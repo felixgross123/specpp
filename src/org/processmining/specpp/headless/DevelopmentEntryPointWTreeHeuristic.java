@@ -66,8 +66,8 @@ public class DevelopmentEntryPointWTreeHeuristic {
 
 
         EfficientTreeConfiguration.Configurator<Place, PlaceState, PlaceNode> etConfig = Configurators.<Place, PlaceState, PlaceNode, TreeNodeScore>heuristicTree()
-                                                                                                      .heuristicExpansion(HeuristicTreeExpansion::new)
-                                                                                                      .heuristic(new MeanCrossMeanFirstOccIndexDeltaTreeHeuristic.Builder())
+                                                                                                      .heuristicExpansion(UpdateGreedyETCPrecisonTreeHeuristic::new)
+                                                                                                      .heuristic(new GreedyETCPrecisionTreeHeuristic.Builder())
                                                                                                       .childGenerationLogic(new MonotonousPlaceGenerationLogic.Builder())
                                                                                                       .tree(EnumeratingTree::new);
 

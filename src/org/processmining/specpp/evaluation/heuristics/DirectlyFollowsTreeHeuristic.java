@@ -1,6 +1,4 @@
 package org.processmining.specpp.evaluation.heuristics;
-
-import org.apache.commons.collections4.BidiMap;
 import org.processmining.specpp.componenting.data.DataRequirements;
 import org.processmining.specpp.componenting.data.ParameterRequirements;
 import org.processmining.specpp.componenting.delegators.DelegatingDataSource;
@@ -12,8 +10,6 @@ import org.processmining.specpp.datastructures.log.Activity;
 import org.processmining.specpp.datastructures.log.Log;
 import org.processmining.specpp.datastructures.log.Variant;
 import org.processmining.specpp.datastructures.log.impls.IndexedVariant;
-import org.processmining.specpp.datastructures.petri.Place;
-import org.processmining.specpp.datastructures.petri.Transition;
 import org.processmining.specpp.datastructures.tree.base.HeuristicStrategy;
 import org.processmining.specpp.datastructures.tree.heuristic.SubtreeMonotonicity;
 import org.processmining.specpp.datastructures.tree.heuristic.TreeNodeScore;
@@ -22,15 +18,19 @@ import org.processmining.specpp.datastructures.vectorization.IntVector;
 import org.processmining.specpp.traits.ZeroOneBounded;
 
 import java.util.Comparator;
-import java.util.PrimitiveIterator;
 
 public class DirectlyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNode, TreeNodeScore>, ZeroOneBounded, SubtreeMonotonicity.Decreasing {
     private final int[][] dfCounts;
 
+    private final double alpha;
+    private final int maxDF;
+    private final int maxSize;
 
-    public DirectlyFollowsTreeHeuristic(int[][] dfCounts) {
+    public DirectlyFollowsTreeHeuristic(int[][] dfCounts, double alpha, int maxDF, int maxSize) {
         this.dfCounts = dfCounts;
-
+        this.alpha = alpha;
+        this.maxDF = maxDF;
+        this.maxSize = maxSize;
     }
 
     public static class Builder extends ComponentSystemAwareBuilder<DirectlyFollowsTreeHeuristic> {
@@ -38,10 +38,11 @@ public class DirectlyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNode
 
         private final DelegatingDataSource<Log> rawLog = new DelegatingDataSource<>();
         private final DelegatingDataSource<IntEncodings<Activity>> encAct = new DelegatingDataSource<>();
+        private final DelegatingDataSource<TreeHeuristcAlpha> alpha = new DelegatingDataSource<>();
 
 
         public Builder() {
-            globalComponentSystem().require(DataRequirements.RAW_LOG, rawLog).require(DataRequirements.ENC_ACT, encAct);
+            globalComponentSystem().require(DataRequirements.RAW_LOG, rawLog).require(DataRequirements.ENC_ACT, encAct).require(ParameterRequirements.TREEHEURISTIC_ALPHA, alpha);
         }
 
         @Override
@@ -52,6 +53,7 @@ public class DirectlyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNode
             IntEncoding<Activity> postsetEncoding = activityIntEncodings.getPostsetEncoding();
             int preSize = presetEncoding.size();
             int postSize = postsetEncoding.size();
+
 
             int[][] counts = new int[preSize][postSize];
             for (int i = 0; i < counts.length; i++) {
@@ -76,9 +78,21 @@ public class DirectlyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNode
                 }
             }
 
+            //search for max DF value
+            int maxDF = 0;
+
+            for (int[] rows : counts) {
+                for (int entry : rows) {
+                    if (entry > maxDF) {
+                        maxDF = entry;
+                    }
+                }
+            }
 
 
-            return new DirectlyFollowsTreeHeuristic(counts);
+            int maxSize = encAct.getData().getPresetEncoding().size() + encAct.getData().getPostsetEncoding().size();
+
+            return new DirectlyFollowsTreeHeuristic(counts, alpha.getData().getAlpha(), maxDF, maxSize);
         }
     }
 
@@ -89,7 +103,7 @@ public class DirectlyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNode
                 .flatMap(i -> node.getPlace().postset().streamIndices().map(j -> dfCounts[i][j]))
                 .sum();
 
-        double score = (double) sum / node.getPlace().size();
+        double score = alpha * (((double) sum / node.getPlace().size()) / maxDF) + (1-alpha) * (1-((double) node.getPlace().size() / maxSize));
 
         return new TreeNodeScore(score);
     }
