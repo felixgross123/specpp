@@ -26,6 +26,8 @@ public class ProMConfig {
     List<FrameworkBridge.AnnotatedPostProcessor> ppPipeline;
     double tau, delta, p, alpha;
 
+    boolean updateGreedy;
+
     public boolean useETCPrecisionOriented;
 
     public int steepness;
@@ -44,6 +46,7 @@ public class ProMConfig {
         pc.respectWiring = false;
         pc.supportRestart = false;
         pc.treeHeuristic = FrameworkBridge.BridgedHeuristics.BFS_Emulation.getBridge();
+        pc.updateGreedy = false;
         pc.enforceHeuristicThreshold = false;
         pc.concurrentReplay = false;
         pc.permitNegativeMarkingsDuringReplay = false;

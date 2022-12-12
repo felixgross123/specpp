@@ -127,7 +127,11 @@ public class ConfigurationController extends AbstractStageController {
             htCfg.heuristic(pc.treeHeuristic.getBuilder());
 
             if(pc.treeHeuristic == FrameworkBridge.BridgedHeuristics.GreedyETCPrecision.getBridge()) {
-                htCfg.heuristicExpansion(UpdateGreedyTreeHeuristic::new);
+                if(pc.updateGreedy) {
+                    htCfg.heuristicExpansion(UpdateGreedyTreeHeuristic::new);
+                } else {
+                    htCfg.heuristicExpansion(HeuristicTreeExpansion::new);
+                }
             }else {
                 if (pc.enforceHeuristicThreshold)
                     htCfg.heuristicExpansion(isSupervisingEvents ? EventingDiscriminatingHeuristicTreeExpansion::new : DiscriminatingHeuristicTreeExpansion::new);
