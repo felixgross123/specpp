@@ -24,7 +24,8 @@ import org.processmining.specpp.datastructures.tree.nodegen.PlaceState;
 import org.processmining.specpp.evaluation.fitness.ReplayComputationParameters;
 import org.processmining.specpp.evaluation.heuristics.DirectlyFollowsHeuristic;
 import org.processmining.specpp.evaluation.heuristics.TreeHeuristicThreshold;
-import org.processmining.specpp.evaluation.heuristics.UpdateGreedyETCPrecisonTreeHeuristic;
+import org.processmining.specpp.datastructures.tree.heuristic.UpdatableHeuristicExpansionStrategy;
+import org.processmining.specpp.evaluation.heuristics.UpdateGreedyTreeHeuristic;
 import org.processmining.specpp.evaluation.implicitness.ImplicitnessTestingParameters;
 import org.processmining.specpp.evaluation.implicitness.LPBasedImplicitnessCalculator;
 import org.processmining.specpp.evaluation.markings.LogHistoryMaker;
@@ -126,7 +127,7 @@ public class ConfigurationController extends AbstractStageController {
             htCfg.heuristic(pc.treeHeuristic.getBuilder());
 
             if(pc.treeHeuristic == FrameworkBridge.BridgedHeuristics.GreedyETCPrecision.getBridge()) {
-                htCfg.heuristicExpansion(UpdateGreedyETCPrecisonTreeHeuristic::new);
+                htCfg.heuristicExpansion(UpdateGreedyTreeHeuristic::new);
             }else {
                 if (pc.enforceHeuristicThreshold)
                     htCfg.heuristicExpansion(isSupervisingEvents ? EventingDiscriminatingHeuristicTreeExpansion::new : DiscriminatingHeuristicTreeExpansion::new);

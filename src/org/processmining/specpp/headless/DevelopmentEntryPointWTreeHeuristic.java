@@ -13,8 +13,8 @@ import org.processmining.specpp.datastructures.petri.CollectionOfPlaces;
 import org.processmining.specpp.datastructures.petri.Place;
 import org.processmining.specpp.datastructures.petri.ProMPetrinetWrapper;
 import org.processmining.specpp.datastructures.tree.base.impls.EnumeratingTree;
-import org.processmining.specpp.datastructures.tree.heuristic.HeuristicTreeExpansion;
 import org.processmining.specpp.datastructures.tree.heuristic.TreeNodeScore;
+import org.processmining.specpp.datastructures.tree.heuristic.UpdatableHeuristicExpansionStrategy;
 import org.processmining.specpp.datastructures.tree.nodegen.MonotonousPlaceGenerationLogic;
 import org.processmining.specpp.datastructures.tree.nodegen.PlaceNode;
 import org.processmining.specpp.datastructures.tree.nodegen.PlaceState;
@@ -66,7 +66,7 @@ public class DevelopmentEntryPointWTreeHeuristic {
 
 
         EfficientTreeConfiguration.Configurator<Place, PlaceState, PlaceNode> etConfig = Configurators.<Place, PlaceState, PlaceNode, TreeNodeScore>heuristicTree()
-                                                                                                      .heuristicExpansion(UpdateGreedyETCPrecisonTreeHeuristic::new)
+                                                                                                      .heuristicExpansion(UpdateGreedyTreeHeuristic::new)
                                                                                                       .heuristic(new GreedyETCPrecisionTreeHeuristic.Builder())
                                                                                                       .childGenerationLogic(new MonotonousPlaceGenerationLogic.Builder())
                                                                                                       .tree(EnumeratingTree::new);
@@ -102,7 +102,7 @@ public class DevelopmentEntryPointWTreeHeuristic {
             public void init() {
                 globalComponentSystem().provide(ParameterRequirements.PLACE_GENERATOR_PARAMETERS.fulfilWithStatic(new PlaceGeneratorParameters(7, true, false, false, false)))
                                        .provide(ParameterRequirements.SUPERVISION_PARAMETERS.fulfilWithStatic(SupervisionParameters.instrumentNone(true, false)))
-                        .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(0.9)))
+                        .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(0.7)))
                         .provide(ParameterRequirements.PRECISION_TRHESHOLD.fulfilWithStatic(new PrecisionThreshold(1.0)))
                         .provide(ParameterRequirements.TREEHEURISTIC_ALPHA.fulfilWithStatic(new TreeHeuristcAlpha(1.0)));
             }
