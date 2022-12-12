@@ -40,8 +40,6 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
     private final JCheckBox supportRestartCheckBox;
     private final JCheckBox concurrentReplayCheckBox;
 
-    private final JCheckBox updateGreedyTreeHeuristic;
-
     private final JComboBox<FrameworkBridge.AnnotatedEvaluator> deltaAdaptationFunctionComboBox;
     private final JComboBox<ProMConfig.CompositionStrategy> compositionStrategyComboBox;
     private final MyListModel<FrameworkBridge.AnnotatedPostProcessor> ppPipelineModel;
@@ -168,13 +166,6 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         bridgedHeuristicsLabeledComboBox.setVisible(false);
         bridgedHeuristicsLabeledComboBox.add(SwingFactory.help(null, html("Place Interestingness - based on eventually follows relation of activities (see <a href=\"https://dx.doi.org/10.1007/978-3-030-66498-5_25\">Improving the State-Space Traversal of the eST-Miner by Exploiting Underlying Log Structures</a>)<br>BFS Emulation - equals depth(place)<br>DFS Emulation - equals -depth(place)")));
         proposal.append(bridgedHeuristicsLabeledComboBox);
-
-
-        updateGreedyTreeHeuristic = SwingFactory.labeledCheckBox("update Scores");
-        updateGreedyTreeHeuristic.setVisible(false);
-        updateGreedyTreeHeuristic.setToolTipText("Whether to update the \"GreedyPrecision\" Scores when new Places are added to the Composition");
-        proposal.append(updateGreedyTreeHeuristic);
-
         enforceHeuristicScoreThresholdCheckBox = SwingFactory.labeledCheckBox("enforce heuristic score threshold");
         enforceHeuristicScoreThresholdCheckBox.addActionListener(e -> updatedProposalSettings());
         enforceHeuristicScoreThresholdCheckBox.setVisible(false);
@@ -409,7 +400,6 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         respectWiringCheckBox.setSelected(pc.respectWiring);
         supportRestartCheckBox.setSelected(pc.supportRestart);
         bridgedHeuristicsLabeledComboBox.getComboBox().setSelectedItem(pc.treeHeuristic);
-        updateGreedyTreeHeuristic.setSelected(pc.updateGreedy);
         enforceHeuristicScoreThresholdCheckBox.setSelected(pc.enforceHeuristicThreshold);
         concurrentReplayCheckBox.setSelected(pc.concurrentReplay);
         permitNegativeMarkingsCheckBox.setSelected(pc.permitNegativeMarkingsDuringReplay);
@@ -471,7 +461,6 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         pc.respectWiring = respectWiringCheckBox.isSelected();
         pc.supportRestart = supportRestartCheckBox.isSelected();
         pc.treeHeuristic = (FrameworkBridge.AnnotatedTreeHeuristic) bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem();
-        pc.updateGreedy = updateGreedyTreeHeuristic.isSelected();
         pc.enforceHeuristicThreshold = enforceHeuristicScoreThresholdCheckBox.isSelected();
         pc.concurrentReplay = concurrentReplayCheckBox.isSelected();
         pc.permitNegativeMarkingsDuringReplay = permitNegativeMarkingsCheckBox.isSelected();
@@ -574,7 +563,6 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
                 || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.DirectlyFollows.getBridge()
                 || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.EventuallyFollows.getBridge())
         );
-        updateGreedyTreeHeuristic.setVisible(expansionStrategyComboBox.getSelectedItem() == ProMConfig.TreeExpansionSetting.Heuristic &&  bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.GreedyETCPrecision.getBridge());
         revalidate();
         updateReadinessState();
     }
