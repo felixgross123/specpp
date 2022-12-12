@@ -11,6 +11,7 @@ import org.processmining.specpp.componenting.system.GlobalComponentRepository;
 import org.processmining.specpp.componenting.system.link.ComposerComponent;
 import org.processmining.specpp.componenting.system.link.CompositionComponent;
 import org.processmining.specpp.componenting.system.link.ProposerComponent;
+import org.processmining.specpp.componenting.traits.ProvidesEvaluators;
 import org.processmining.specpp.config.InitializingBuilder;
 import org.processmining.specpp.config.PostProcessingConfiguration;
 import org.processmining.specpp.config.ProposerComposerConfiguration;
@@ -48,11 +49,12 @@ public class SPECppBuilder<C extends Candidate, I extends CompositionComponent<C
         ProposerComposerConfiguration<C, I, R> pcConfig = pcConfigDelegator.getData();
         PostProcessingConfiguration<R, F> ppConfig = ppConfigDelegator.getData();
         EvaluatorConfiguration evConfig = evConfigDelegator.getData();
-        evConfig.createPossiblyInstrumentedEvaluators();
+        List<ProvidesEvaluators> evaluatorsList = evConfig.createPossiblyInstrumentedEvaluators();
         ProposerComponent<C> proposer = pcConfig.createPossiblyInstrumentedProposer();
         ComposerComponent<C, I, R> composer = pcConfig.createPossiblyInstrumentedComposer();
         PostProcessingPipeline<R, F> processor = ppConfig.createPostProcessorPipeline();
         SupervisionParameters svParams = svParametersDelegator.getData();
+        evConfig.reCheckoutEvaluators(evaluatorsList);
         if (svParams.shouldClassBeInstrumented(SPECpp.class))
             return new InstrumentedSPECpp<>(gcr, supervisorList, proposer, composer, processor);
         else return new SPECpp<>(gcr, supervisorList, proposer, composer, processor);

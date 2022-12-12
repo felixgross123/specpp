@@ -19,7 +19,7 @@ public class UpdateGreedyETCPrecisonTreeHeuristic<C extends Candidate & NodeProp
 
     public UpdateGreedyETCPrecisonTreeHeuristic(HeuristicStrategy<? super N, H> heuristicStrategy) {
         super(heuristicStrategy);
-        globalComponentSystem().require(SupervisionRequirements.observable("composer.events", JavaTypingUtils.castClass(CandidateCompositionEvent.class)), ContainerUtils.observeResults(this));
+        localComponentSystem().require(SupervisionRequirements.observable("composer.events", JavaTypingUtils.castClass(CandidateCompositionEvent.class)), ContainerUtils.observeResults(this));
     }
 
     protected final BidiMap<C, N> connection = new DualHashBidiMap<>();
@@ -39,12 +39,12 @@ public class UpdateGreedyETCPrecisonTreeHeuristic<C extends Candidate & NodeProp
     @Override
     public void observe(CandidateCompositionEvent<C> observation) {
         C candidate = observation.getCandidate();
+
         N corresponding = connection.get(candidate);
         switch (observation.getAction()) {
             case Accept:
                 // determine nodes to update
-
-
+                System.out.println("UpdateGreedyETCPrecisonTreeHeuristic.observe: " + candidate);
                 // n in super.priorityQueue
 
                     // if n.postset CAP corresponding.postset != empty

@@ -5,12 +5,8 @@ import org.processmining.specpp.componenting.data.DataRequirements;
 import org.processmining.specpp.componenting.delegators.DelegatingDataSource;
 import org.processmining.specpp.componenting.system.ComponentSystemAwareBuilder;
 import org.processmining.specpp.componenting.system.link.AbstractBaseClass;
-import org.processmining.specpp.composition.composers.FelixNewPlaceComposer;
 import org.processmining.specpp.datastructures.log.Activity;
 import org.processmining.specpp.datastructures.log.Log;
-import org.processmining.specpp.datastructures.log.Variant;
-import org.processmining.specpp.datastructures.log.impls.Factory;
-import org.processmining.specpp.datastructures.log.impls.IndexedVariant;
 import org.processmining.specpp.datastructures.petri.Place;
 import org.processmining.specpp.datastructures.petri.Transition;
 import org.processmining.specpp.datastructures.tree.base.HeuristicStrategy;
@@ -20,7 +16,9 @@ import org.processmining.specpp.datastructures.tree.nodegen.PlaceNode;
 import org.processmining.specpp.traits.ZeroOneBounded;
 import org.processmining.specpp.util.JavaTypingUtils;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 
 public class GreedyETCPrecisionTreeHeuristic extends AbstractBaseClass implements HeuristicStrategy<PlaceNode, TreeNodeScore>, ZeroOneBounded, SubtreeMonotonicity.Decreasing {
 
@@ -29,9 +27,11 @@ public class GreedyETCPrecisionTreeHeuristic extends AbstractBaseClass implement
     private final DelegatingDataSource<Map<Activity, Integer>> delegatingDataSource = new DelegatingDataSource<>(HashMap::new);
 
 
-    public GreedyETCPrecisionTreeHeuristic( DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping) {
+    public GreedyETCPrecisionTreeHeuristic(DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping) {
         this.actTransMapping = actTransMapping;
-        globalComponentSystem().provide(DataRequirements.dataSource("activitiesToEscapingEdges_Map", JavaTypingUtils.castClass(DelegatingDataSource.class)).fulfilWithStatic(delegatingDataSource));
+
+        globalComponentSystem().provide(DataRequirements.dataSource("activitiesToEscapingEdges_Map", JavaTypingUtils.castClass(DelegatingDataSource.class))
+                                                        .fulfilWithStatic(delegatingDataSource));
     }
 
     @Override
@@ -42,13 +42,13 @@ public class GreedyETCPrecisionTreeHeuristic extends AbstractBaseClass implement
     public static class Builder extends ComponentSystemAwareBuilder<GreedyETCPrecisionTreeHeuristic> {
 
 
-
         final DelegatingDataSource<Log> rawLog = new DelegatingDataSource<>();
         private final DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping = new DelegatingDataSource<>();
 
 
         public Builder() {
-            globalComponentSystem().require(DataRequirements.RAW_LOG, rawLog).require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping);
+            globalComponentSystem().require(DataRequirements.RAW_LOG, rawLog)
+                                   .require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping);
         }
 
         @Override
@@ -62,16 +62,15 @@ public class GreedyETCPrecisionTreeHeuristic extends AbstractBaseClass implement
     public TreeNodeScore computeHeuristic(PlaceNode node) {
         Place p = node.getPlace();
         Map<Activity, Integer> activityToEscapingEdges = delegatingDataSource.getData();
-
-        if(p.isHalfEmpty()) {
+        if (p.isHalfEmpty()) {
             return new TreeNodeScore(Double.MAX_VALUE);
         } else {
-            if(activityToEscapingEdges.isEmpty()) {
-                return  new TreeNodeScore(Double.MAX_VALUE);
+            if (activityToEscapingEdges.isEmpty()) {
+                return new TreeNodeScore(Double.MAX_VALUE);
             } else {
 
                 int EEPostSet = 0;
-                for(Transition t : node.getPlace().postset()) {
+                for (Transition t : node.getPlace().postset()) {
                     Activity a = actTransMapping.getData().getKey(t);
                     EEPostSet += activityToEscapingEdges.get(a);
                 }

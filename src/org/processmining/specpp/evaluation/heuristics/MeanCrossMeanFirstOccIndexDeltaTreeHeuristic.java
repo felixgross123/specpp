@@ -20,7 +20,6 @@ import org.processmining.specpp.datastructures.tree.heuristic.TreeNodeScore;
 import org.processmining.specpp.datastructures.tree.nodegen.PlaceNode;
 import org.processmining.specpp.traits.ZeroOneBounded;
 
-import javax.xml.crypto.Data;
 import java.util.*;
 
 public class MeanCrossMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicStrategy<PlaceNode, TreeNodeScore>, ZeroOneBounded, SubtreeMonotonicity.Decreasing {
@@ -44,7 +43,6 @@ public class MeanCrossMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicSt
     public static class Builder extends ComponentSystemAwareBuilder<MeanCrossMeanFirstOccIndexDeltaTreeHeuristic> {
 
 
-
         private final DelegatingDataSource<Log> rawLog = new DelegatingDataSource<>();
         private final DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping = new DelegatingDataSource<>();
         private final DelegatingDataSource<IntEncodings<Activity>> encAct = new DelegatingDataSource<>();
@@ -52,8 +50,10 @@ public class MeanCrossMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicSt
 
 
         public Builder() {
-            globalComponentSystem().require(DataRequirements.RAW_LOG, rawLog).require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping).require(DataRequirements.ENC_ACT, encAct)
-                    .require(ParameterRequirements.TREEHEURISTIC_ALPHA, alpha);
+            globalComponentSystem().require(DataRequirements.RAW_LOG, rawLog)
+                                   .require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping)
+                                   .require(DataRequirements.ENC_ACT, encAct)
+                                   .require(ParameterRequirements.TREEHEURISTIC_ALPHA, alpha);
         }
 
         @Override
@@ -71,15 +71,15 @@ public class MeanCrossMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicSt
                 int j = 0;
                 for (Activity a : variant) {
                     if (!seen.contains(a)) {
-                        if(!activityToMeanFirstOccurrenceIndex.containsKey(a)) {
+                        if (!activityToMeanFirstOccurrenceIndex.containsKey(a)) {
                             activityToMeanFirstOccurrenceIndex.put(a, (double) j);
-                            activityToFreqSum.put(a,variantFrequency);
+                            activityToFreqSum.put(a, variantFrequency);
                         } else {
                             int freqSumA = activityToFreqSum.get(a);
 
-                            double newAvg = ((double)freqSumA / (double)(freqSumA + variantFrequency)) * activityToMeanFirstOccurrenceIndex.get(a) + ((double)variantFrequency / (double)(freqSumA + variantFrequency)) * j;
+                            double newAvg = ((double) freqSumA / (double) (freqSumA + variantFrequency)) * activityToMeanFirstOccurrenceIndex.get(a) + ((double) variantFrequency / (double) (freqSumA + variantFrequency)) * j;
                             activityToMeanFirstOccurrenceIndex.put(a, newAvg);
-                            activityToFreqSum.put(a,freqSumA + variantFrequency);
+                            activityToFreqSum.put(a, freqSumA + variantFrequency);
                         }
                     }
                     j++;
@@ -90,7 +90,8 @@ public class MeanCrossMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicSt
             double maxDelta = activityToMeanFirstOccurrenceIndex.get(Factory.ARTIFICIAL_END);
             int maxSize = encAct.getData().getPresetEncoding().size() + encAct.getData().getPostsetEncoding().size();
 
-            return new MeanCrossMeanFirstOccIndexDeltaTreeHeuristic(activityToMeanFirstOccurrenceIndex, actTransMapping.getData(), alpha.getData().getAlpha(), maxDelta, maxSize);
+            return new MeanCrossMeanFirstOccIndexDeltaTreeHeuristic(activityToMeanFirstOccurrenceIndex, actTransMapping.getData(), alpha.getData()
+                                                                                                                                        .getAlpha(), maxDelta, maxSize);
         }
     }
 
@@ -114,7 +115,7 @@ public class MeanCrossMeanFirstOccIndexDeltaTreeHeuristic implements HeuristicSt
 
         delta = delta / (node.getPlace().preset().size() * node.getPlace().postset().size());
 
-        double score =  alpha * (delta / maxDelta) + (1-alpha) * ((double) node.getPlace().size() / maxSize);
+        double score = alpha * (delta / maxDelta) + (1 - alpha) * ((double) node.getPlace().size() / maxSize);
         return new TreeNodeScore(score);
     }
 
