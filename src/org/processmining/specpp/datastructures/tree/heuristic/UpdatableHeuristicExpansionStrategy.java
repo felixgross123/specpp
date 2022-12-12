@@ -28,6 +28,8 @@ public class UpdatableHeuristicExpansionStrategy<C extends Candidate & NodePrope
     }
 
 
+
+
     @Override
     protected void addNode(N node, H heuristic) {
         super.addNode(node, heuristic);
