@@ -36,25 +36,8 @@ public class UpdateGreedyTreeHeuristic extends UpdatableHeuristicExpansionStrate
     }
 
     @Override
-    protected void removeNode(PlaceNode node) {
-        super.removeNode(node);
-        removeFromActivityPlacesMapping(node);
-    }
-
-    @Override
     protected void clearHeuristic(PlaceNode node) {
         super.clearHeuristic(node);
-        // removeNode reicht nicht aus
-        // wie in HeuristicTreeExpansion zu sehen ist, können nodes entweder durch
-        // dequeue(node) oder dequeueFirst() entfernt werden
-        // nur im ersten Fall, der aber bisher von keiner expansion strategy genutzt wird, wird removeNode(node) aufgerufen
-        // es ist nicht obvious, dass das der Fall ist
-        // in EventingHeuristicTreeExpansion gibt es für das NodeDequeued event daher auch zwei hooks
-        // clearHeuristic(node) wird immer am Ende aufgerufen
-        // ist nicht sonderlich elegant diese random methode so zu überschreiben, aber ein hackjob ist hackjob
-        // ich bevorzuge daher ich extra hook Methoden mit klarer Benennung in Vergangenheitsform und dadurch definierterem method contract (pre-conditions), wie placeRemoved()
-        // da wo bisher keine solche Erweiterungen existieren, existieren diese Methoden auch nicht
-        // wie auch immer
         removeFromActivityPlacesMapping(node);
     }
 
@@ -65,9 +48,6 @@ public class UpdateGreedyTreeHeuristic extends UpdatableHeuristicExpansionStrate
 
         switch (observation.getAction()) {
             case Accept:
-
-                //checkMapSanity();
-
                 Set<PlaceNode> toUpdate = new HashSet<>();
 
                 for(Transition t : pO.postset()) {
@@ -109,18 +89,4 @@ public class UpdateGreedyTreeHeuristic extends UpdatableHeuristicExpansionStrate
         }
     }
 
-    public boolean checkMapSanity() {
-        MapIterator<Activity, Transition> mapIterator = actTransMapping.get().mapIterator();
-        while(mapIterator.hasNext()) {
-            Activity a = mapIterator.next();
-            if(activityToIngoingPlaceNodes.containsKey(a)) {
-                for (PlaceNode pn : activityToIngoingPlaceNodes.get(a)) {
-                    if (!priorityQueue.contains(pn)) {
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
-    }
 }
