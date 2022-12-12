@@ -51,8 +51,6 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     private final Map<Activity, Set<Place>> activityToIngoingPlaces = new HashMap<>();
     private final Map<Activity, Integer> activityToEscapingEdges = new HashMap<>();
     private final Map<Activity, Integer> activityToAllowed = new HashMap<>();
-    private int currentLevel;
-    boolean levelChange;
     private final EventSupervision<CandidateCompositionEvent<Place>> compositionEventSupervision = PipeWorks.eventSupervision();
 
     public FelixNewPlaceComposer(I composition) {
@@ -68,7 +66,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
                                 .require(ParameterRequirements.PRECISION_TRHESHOLD, precisionThreshold)
                                .provide(SupervisionRequirements.observable("felix.debug", DebugEvent.class, eventSupervisor));
 
-        globalComponentSystem().provide(SupervisionRequirements.observable("composer.events", JavaTypingUtils.castClass(CandidateCompositionEvent.class), compositionEventSupervision));
+        localComponentSystem().provide(SupervisionRequirements.observable("composer.events", JavaTypingUtils.castClass(CandidateCompositionEvent.class), compositionEventSupervision));
     }
 
 
@@ -119,6 +117,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
             removeFromActivityPlacesMapping(candidate);
             //System.out.println("----------------");
 
+            newAddition = true;
             return true;
         }
     }
@@ -196,22 +195,14 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         //update ActivityPlaceMapping
         addToActivityPlacesMapping(candidate);
 
-        //check levelChange
-        if(candidate.size() > currentLevel) {
-            currentLevel = candidate.size();
-            levelChange = true;
-            compositionEventSupervision.observe(new CandidateAccepted<>(candidate));
-        }
+        compositionEventSupervision.observe(new CandidateAccepted<>(candidate));
+
     }
 
     @Override
     protected void candidateRejected(Place candidate) {
 
         //check levelChange
-        if(candidate.size() > currentLevel) {
-            currentLevel = candidate.size();
-            levelChange = true;
-        }
 
         compositionEventSupervision.observe(new CandidateRejected<>(candidate));
 
@@ -227,9 +218,6 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
     @Override
     protected void initSelf() {
-        //init TreeLevels
-        currentLevel = 2;
-        levelChange = false;
 
         // Build Prefix-Automaton
         Log log = logSource.getData();
@@ -259,7 +247,8 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
     private void addToActivityPlacesMapping(Place p){
         for(Transition t : p.postset()) {
-            Set<Place> tIn = activityToIngoingPlaces.get(actTransMapping.get().getKey(t));
+            Activity a = actTransMapping.get().getKey(t);
+            Set<Place> tIn = activityToIngoingPlaces.get(a);
             tIn.add(p);
         }
     }
@@ -272,19 +261,19 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         }
     }
 
+    private boolean newAddition = false;
 
     @Override
     public boolean isFinished() {
 
-        //only check on levelChange
-        if(levelChange) {
-            levelChange = false;
-            if(optimalPrecisionReached()){
+        if(newAddition) {
+            newAddition = false;
+            if (optimalPrecisionReached()) {
                 return true;
             } else {
                 return checkPrecisionThreshold(precisionThreshold.get().getP());
             }
-        }else{
+        } else {
             return false;
         }
     }
@@ -301,7 +290,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
         double precisionApprox = (1 - ((double)EE/allowed));
         if(precisionApprox > p) {
-            System.out.println("PREMATURE ABORT precision threshold " + precisionThreshold.get().getP() + " reached after level " + (currentLevel-1));
+            System.out.println("PREMATURE ABORT precision threshold " + precisionThreshold.get().getP() + " reached");
             return true;
         } else {
             return false;
@@ -315,7 +304,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
                 return false;
             }
         }
-        System.out.println("PREMATURE ABORT optimal precision reached after level " + (currentLevel-1));
+        System.out.println("PREMATURE ABORT optimal precision reached");
         return true;
     }
 
