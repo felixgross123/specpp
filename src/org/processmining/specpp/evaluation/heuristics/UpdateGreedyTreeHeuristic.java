@@ -12,6 +12,8 @@ import org.processmining.specpp.datastructures.tree.base.HeuristicStrategy;
 import org.processmining.specpp.datastructures.tree.heuristic.TreeNodeScore;
 import org.processmining.specpp.datastructures.tree.heuristic.UpdatableHeuristicExpansionStrategy;
 import org.processmining.specpp.datastructures.tree.nodegen.PlaceNode;
+import org.processmining.specpp.util.JavaTypingUtils;
+
 import java.util.*;
 
 public class UpdateGreedyTreeHeuristic extends UpdatableHeuristicExpansionStrategy<Place, PlaceNode, TreeNodeScore> {
@@ -19,12 +21,16 @@ public class UpdateGreedyTreeHeuristic extends UpdatableHeuristicExpansionStrate
     private final Map<Activity, Set<PlaceNode>> activityToIngoingPlaceNodes = new HashMap<>();
     private final DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping = new DelegatingDataSource<>();
 
+    private final DelegatingDataSource<Map<Activity, Integer>> delegatingDataSource = new DelegatingDataSource<>(HashMap::new);
+
 
     public UpdateGreedyTreeHeuristic(HeuristicStrategy heuristicStrategy) {
         super(heuristicStrategy);
 
 
         globalComponentSystem().require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping);
+        globalComponentSystem().provide(DataRequirements.dataSource("activitiesToEscapingEdges_Map_1", JavaTypingUtils.castClass(DelegatingDataSource.class)).fulfilWithStatic(delegatingDataSource));
+
 
     }
 
@@ -39,7 +45,10 @@ public class UpdateGreedyTreeHeuristic extends UpdatableHeuristicExpansionStrate
     protected void clearHeuristic(PlaceNode node) {
         super.clearHeuristic(node);
         removeFromActivityPlacesMapping(node);
+
     }
+
+    private Map<Activity, Integer> activitiesToEscapingEdgesPrevious = new HashMap<>();
 
 
     @Override
@@ -48,16 +57,37 @@ public class UpdateGreedyTreeHeuristic extends UpdatableHeuristicExpansionStrate
 
         switch (observation.getAction()) {
             case Accept:
-                Set<PlaceNode> toUpdate = new HashSet<>();
 
-                for(Transition t : pO.postset()) {
-                    Activity a = actTransMapping.get().getKey(t);
-                    toUpdate.addAll(activityToIngoingPlaceNodes.get(a));
-                }
+                    Set<Activity> actvitiesChanged = new HashSet<>();
 
-                for (PlaceNode p : toUpdate) {
-                    updateNode(p, getHeuristicStrategy().computeHeuristic(p));
-                }
+                    Map<Activity, Integer> activitiesToEscapingEdges = delegatingDataSource.getData();
+                    for(Transition t : pO.postset()) {
+                        Activity a = actTransMapping.get().getKey(t);
+                        if(activitiesToEscapingEdgesPrevious.isEmpty()) {
+                            //only at the first accepted place: add all postset activities
+                            actvitiesChanged.add(a);
+                        } else {
+                            //check if EE Score has changed
+                            if (!activitiesToEscapingEdgesPrevious.get(a).equals(activitiesToEscapingEdges.get(a))) {
+                                actvitiesChanged.add(a);
+                            }
+                        }
+                    }
+
+                    //Collect Places that need to be updated
+                    Set<PlaceNode> placesToUpdate = new HashSet<>();
+
+                    for(Activity a : actvitiesChanged) {
+                        placesToUpdate.addAll(activityToIngoingPlaceNodes.get(a));
+                    }
+
+                    for (PlaceNode p : placesToUpdate) {
+                        updateNode(p, getHeuristicStrategy().computeHeuristic(p));
+                    }
+
+                //update previous map
+                activitiesToEscapingEdgesPrevious = new HashMap<>(delegatingDataSource.getData());
+
                 break;
 
             default:

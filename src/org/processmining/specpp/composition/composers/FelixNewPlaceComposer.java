@@ -59,6 +59,8 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         ConsumingContainer<DataSource<DelegatingDataSource<Map<Activity, Integer>>>> consActivitiesToEscapingEdges = new ConsumingContainer<>(del -> del.getData().setDelegate(StaticDataSource.of(activityToEscapingEdges)));
         globalComponentSystem().require(DataRequirements.dataSource("activitiesToEscapingEdges_Map", JavaTypingUtils.castClass(DelegatingDataSource.class)), consActivitiesToEscapingEdges);
 
+        ConsumingContainer<DataSource<DelegatingDataSource<Map<Activity, Integer>>>> consActivitiesToEscapingEdges1 = new ConsumingContainer<>(del -> del.getData().setDelegate(StaticDataSource.of(activityToEscapingEdges)));
+        globalComponentSystem().require(DataRequirements.dataSource("activitiesToEscapingEdges_Map_1", JavaTypingUtils.castClass(DelegatingDataSource.class)), consActivitiesToEscapingEdges1);
 
         globalComponentSystem().require(DataRequirements.RAW_LOG, logSource)
                                .require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping)

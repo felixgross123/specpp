@@ -102,7 +102,7 @@ public class DevelopmentEntryPointWTreeHeuristic {
             public void init() {
                 globalComponentSystem().provide(ParameterRequirements.PLACE_GENERATOR_PARAMETERS.fulfilWithStatic(new PlaceGeneratorParameters(7, true, false, false, false)))
                                        .provide(ParameterRequirements.SUPERVISION_PARAMETERS.fulfilWithStatic(SupervisionParameters.instrumentNone(true, false)))
-                        .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(0.7)))
+                        .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(0.6)))
                         .provide(ParameterRequirements.PRECISION_TRHESHOLD.fulfilWithStatic(new PrecisionThreshold(1.0)))
                         .provide(ParameterRequirements.TREEHEURISTIC_ALPHA.fulfilWithStatic(new TreeHeuristcAlpha(1.0)));
             }
