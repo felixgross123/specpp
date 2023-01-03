@@ -245,6 +245,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
                 activityToAllowed.put(a, allowed);
             }
         }
+        System.out.println(".");
     }
 
     private void addToActivityPlacesMapping(Place p){
@@ -316,67 +317,51 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         int allowed = 0;
         Log log = logSource.getData();
 
-        if(activityToIngoingPlaces.get(a).isEmpty()) {
-            // calculate initial score
 
-            for(IndexedVariant variant : log) {
-                int vIndex = variant.getIndex();
+        Set<Place> prerequisites = activityToIngoingPlaces.get(a);
 
-                for(int i=0; i<variant.getVariant().getLength(); i++) {
-                    allowed += log.getVariantFrequency(vIndex);
-                    if(!variant.getVariant().getAt(i).equals(a)) {
-                        escapingEdges += log.getVariantFrequency(vIndex);
+        // collect markingHistories
+        LinkedList<VariantMarkingHistories> markingHistories = new LinkedList<>();
+        for(Place p : prerequisites) {
+            markingHistories.add(markingHistoriesEvaluator.eval(p));
+        }
+
+        //iterate log: variant by variant, activity by activity
+
+        for(IndexedVariant variant : log) {
+
+            int vIndex = variant.getIndex();
+            int length = variant.getVariant().getLength();
+
+            PAState logState = prefixAutomaton.getInitial();
+
+
+            for (int j = 1; j < length * 2; j += 2) {
+                int aIndex = ((j + 1) / 2) - 1;
+
+                // update log state
+                logState = logState.getTrans(log.getVariant(vIndex).getAt(aIndex)).getPointer();
+
+                boolean isAllowedO = true;
+
+                for(VariantMarkingHistories h : markingHistories) {
+                    //check if column = 1 f.a. p in prerequites --> activity a is allowed
+                    IntBuffer buffer = h.getAt(vIndex);
+                    int p = buffer.position();
+
+                    if(buffer.get(p + j) == 0) {
+                        isAllowedO = false;
+                        break;
                     }
                 }
-            }
 
-        } else {
+                if(isAllowedO) {
+                    allowed += log.getVariantFrequency(vIndex);
 
-            Set<Place> prerequisites = activityToIngoingPlaces.get(a);
-
-            // collect markingHistories
-            LinkedList<VariantMarkingHistories> markingHistories = new LinkedList<>();
-            for(Place p : prerequisites) {
-                markingHistories.add(markingHistoriesEvaluator.eval(p));
-            }
-
-            //iterate log: variant by variant, activity by activity
-
-            for(IndexedVariant variant : log) {
-
-                int vIndex = variant.getIndex();
-                int length = variant.getVariant().getLength();
-
-                PAState logState = prefixAutomaton.getInitial();
-
-
-                for (int j = 1; j < length * 2; j += 2) {
-                    int aIndex = ((j + 1) / 2) - 1;
-
-                    // update log state
-                    logState = logState.getTrans(log.getVariant(vIndex).getAt(aIndex)).getPointer();
-
-                    boolean isAllowedO = true;
-
-                    for(VariantMarkingHistories h : markingHistories) {
-                        //check if column = 1 f.a. p in prerequites --> activity a is allowed
-                        IntBuffer buffer = h.getAt(vIndex);
-                        int p = buffer.position();
-
-                        if(buffer.get(p + j) == 0) {
-                            isAllowedO = false;
-                            break;
-                        }
-                    }
-
-                    if(isAllowedO) {
-                        allowed += log.getVariantFrequency(vIndex);
-
-                        //check if a is reflected
-                        if (!logState.checkForOutgoingAct(a)) {
-                            //a is not reflected, hence escaping
-                            escapingEdges += log.getVariantFrequency(vIndex);
-                        }
+                    //check if a is reflected
+                    if (!logState.checkForOutgoingAct(a)) {
+                        //a is not reflected, hence escaping
+                        escapingEdges += log.getVariantFrequency(vIndex);
                     }
                 }
             }
