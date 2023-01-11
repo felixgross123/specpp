@@ -44,8 +44,8 @@ public class FrameworkBridge {
     public enum BridgedHeuristics {
         DirectlyFollows(new AnnotatedTreeHeuristic("Directly Follows", DirectlyFollowsTreeHeuristic.Builder::new)),
 
-        MeanMeanFirstOccIndexDelta(new AnnotatedTreeHeuristic("MeanMeanFirstOccIndexDelta", MeanMeanFirstOccIndexDeltaTreeHeuristic.Builder::new)),
-        MeanCrossMeanFirstOccIndexDelta(new AnnotatedTreeHeuristic("MeanCrossMeanFirstOccIndexDelta", MeanCrossMeanFirstOccIndexDeltaTreeHeuristic.Builder::new)),
+        MeanMeanFirstOccIndexDelta(new AnnotatedTreeHeuristic("AvgFirstOccDelta", MeanMeanFirstOccIndexDeltaTreeHeuristic.Builder::new)),
+        MeanCrossMeanFirstOccIndexDelta(new AnnotatedTreeHeuristic("CrossAvgFirstOccDelta", MeanCrossMeanFirstOccIndexDeltaTreeHeuristic.Builder::new)),
         EventuallyFollows(new AnnotatedTreeHeuristic("Eventually Follows", EventuallyFollowsTreeHeuristic.Builder::new)),
 
         GreedyETCPrecision(new AnnotatedTreeHeuristic("GreedyETCPrecision", GreedyETCPrecisionTreeHeuristic.Builder::new)),

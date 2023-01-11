@@ -15,6 +15,9 @@ public class PublicPaths {
     //Too large
     public static final String REALLIFE_LOANAPPLICATIONPROCESS = PathTools.getRelativeFolderPath(PathTools.FolderStructure.EVENT_LOG_FOLDER) + "RealLife_LoanApplicationProcess.xes";
     public static final String REALLIFE_RTFM = PathTools.getRelativeFolderPath(PathTools.FolderStructure.EVENT_LOG_FOLDER) + "RealLife_RTFM.xes";
+    public static final String REALLIFE_HD2017 = PathTools.getRelativeFolderPath(PathTools.FolderStructure.EVENT_LOG_FOLDER) + "HD2017.xes";
+    public static final String REALLIFE_Teleclaims = PathTools.getRelativeFolderPath(PathTools.FolderStructure.EVENT_LOG_FOLDER) + "Teleclaims.xes";
 
-    public static final String REALLIFE_SEPSIS = PathTools.getRelativeFolderPath(PathTools.FolderStructure.EVENT_LOG_FOLDER) + "RealLife_SEPSIS.xes";
+
+
 }

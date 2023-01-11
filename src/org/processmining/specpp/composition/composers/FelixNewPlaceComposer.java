@@ -71,14 +71,12 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         localComponentSystem().provide(SupervisionRequirements.observable("composer.events", JavaTypingUtils.castClass(CandidateCompositionEvent.class), compositionEventSupervision));
     }
 
-
     @Override
     protected boolean deliberateAcceptance(Place candidate) {
 
         //eventSupervisor.observe(new DebugEvent("read me"));
 
         //System.out.println("Evaluating Place " + candidate);
-
         if (!checkPrecisionGain(candidate)) {
             // no decrease in EE(a) for any activity a that was reevaluated
 
@@ -290,6 +288,8 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         for (int i : activityToAllowed.values()) {
             allowed += i;
         }
+        //for starting activity:
+        allowed += logSource.getData().totalTraceCount();
 
         double precisionApprox = (1 - ((double)EE/allowed));
         if(precisionApprox > p) {

@@ -256,7 +256,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
                                      .setRenderer(createTooltippedListCellRenderer(ImmutableMap.of(ProMConfig.CIPRVariant.ReplayBased, "Uses subregion implicitness on the markings obtained from replay.", ProMConfig.CIPRVariant.LPBased, "Uses lp optimization based structural implicitness.")));
         composition.append(ciprVariantCheckboxedComboBox);
 
-        ETCPrecisionOrientedComposerCheckBox = SwingFactory.labeledCheckBox("ETC-oriented Composer", false);
+        ETCPrecisionOrientedComposerCheckBox = SwingFactory.labeledCheckBox("ETC-based Composer", false);
         ETCPrecisionOrientedComposerCheckBox.addItemListener(e -> updatedCompositionSettings());
         ETCPrecisionOrientedComposerCheckBox.addActionListener(e -> ciprVariantCheckboxedComboBox.getCheckBox().setSelected(false));
         ciprVariantCheckboxedComboBox.getCheckBox().addActionListener(e -> ETCPrecisionOrientedComposerCheckBox.setSelected(false));
