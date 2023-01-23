@@ -17,8 +17,8 @@ import org.processmining.specpp.composition.events.CandidateAcceptanceRevoked;
 import org.processmining.specpp.composition.events.CandidateAccepted;
 import org.processmining.specpp.composition.events.CandidateCompositionEvent;
 import org.processmining.specpp.composition.events.CandidateRejected;
-import org.processmining.specpp.config.parameters.PrecisionThreshold;
-import org.processmining.specpp.config.parameters.TauFitnessThresholds;
+import org.processmining.specpp.config.parameters.ETCPrecisionThresholdRho;
+import org.processmining.specpp.config.parameters.PrecisionTresholdGamma;
 import org.processmining.specpp.datastructures.encoding.BitEncodedSet;
 import org.processmining.specpp.datastructures.log.Activity;
 import org.processmining.specpp.datastructures.log.Log;
@@ -30,13 +30,11 @@ import org.processmining.specpp.datastructures.petri.Transition;
 import org.processmining.specpp.datastructures.transitionSystems.PAState;
 import org.processmining.specpp.datastructures.transitionSystems.PrefixAutomaton;
 import org.processmining.specpp.datastructures.vectorization.VariantMarkingHistories;
-import org.processmining.specpp.evaluation.implicitness.ImplicitnessRating;
 import org.processmining.specpp.supervision.EventSupervision;
 import org.processmining.specpp.supervision.observations.DebugEvent;
 import org.processmining.specpp.supervision.piping.PipeWorks;
 import org.processmining.specpp.util.JavaTypingUtils;
 
-import javax.xml.crypto.Data;
 import java.nio.IntBuffer;
 import java.util.*;
 
@@ -46,12 +44,14 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     private final DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping = new DelegatingDataSource<>();
     private final DelegatingEvaluator<Place, VariantMarkingHistories> markingHistoriesEvaluator = new DelegatingEvaluator<>();
     private final EventSupervision<DebugEvent> eventSupervisor = PipeWorks.eventSupervision();
-    private final DelegatingDataSource<PrecisionThreshold> precisionThreshold = new DelegatingDataSource<>();
+    private final DelegatingDataSource<ETCPrecisionThresholdRho> rho = new DelegatingDataSource<>();
+    private final DelegatingDataSource<PrecisionTresholdGamma> gamma = new DelegatingDataSource<>();
     private final PrefixAutomaton prefixAutomaton = new PrefixAutomaton(new PAState());
     private final Map<Activity, Set<Place>> activityToIngoingPlaces = new HashMap<>();
-    private final Map<Activity, Integer> activityToEscapingEdges = new HashMap<>();
-    private final Map<Activity, Integer> activityToAllowed = new HashMap<>();
+    private Map<Activity, Integer> activityToEscapingEdges = new HashMap<>();
+    private Map<Activity, Integer> activityToAllowed = new HashMap<>();
     private final EventSupervision<CandidateCompositionEvent<Place>> compositionEventSupervision = PipeWorks.eventSupervision();
+    private double currETCPrecision;
 
     public FelixNewPlaceComposer(I composition) {
         super(composition, c -> new CollectionOfPlaces(c.toList()));
@@ -65,7 +65,8 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         globalComponentSystem().require(DataRequirements.RAW_LOG, logSource)
                                .require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping)
                                .require(EvaluationRequirements.PLACE_MARKING_HISTORY, markingHistoriesEvaluator)
-                                .require(ParameterRequirements.PRECISION_TRHESHOLD, precisionThreshold)
+                               .require(ParameterRequirements.PRECISION_TRHESHOLD_RHO, rho)
+                               .require(ParameterRequirements.PRECISION_TRHESHOLD_GAMMA, gamma)
                                .provide(SupervisionRequirements.observable("felix.debug", DebugEvent.class, eventSupervisor));
 
         localComponentSystem().provide(SupervisionRequirements.observable("composer.events", JavaTypingUtils.castClass(CandidateCompositionEvent.class), compositionEventSupervision));
@@ -129,27 +130,33 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
             activitiesToRevealuate.add(actTransMapping.getData().getKey(t));
         }
 
-        boolean isMorePrecise = false;
 
         addToActivityPlacesMapping(p);
 
+        Map<Activity, Integer> tmpActivityToEscapingEdges = new HashMap<>(activityToEscapingEdges);
+        Map<Activity, Integer> tmpActivityToAllowed = new HashMap<>(activityToAllowed);
+
         for (Activity a : activitiesToRevealuate) {
             int[] evalRes = evaluateEscapingEdges(a);
-            int oldEE = activityToEscapingEdges.get(a);
             int newEE = evalRes[0];
             int newAllowed = evalRes[1];
 
-            if (oldEE > newEE) {
-                isMorePrecise = true;
-                //note: if p brings gain in precision we assume that it will be accepted (hence we update the scores)
-                activityToEscapingEdges.put(a, newEE);
-                activityToAllowed.put(a, newAllowed);
-
-            }
+            tmpActivityToEscapingEdges.put(a, newEE);
+            tmpActivityToAllowed.put(a, newAllowed);
         }
+
         removeFromActivityPlacesMapping(p);
 
-        return isMorePrecise;
+        double newETCPrecision = calcETCPrecision(tmpActivityToEscapingEdges, tmpActivityToAllowed);
+        if (newETCPrecision - currETCPrecision > gamma.getData().getG() ) {
+            //note: if p brings gain in precision we assume that it will be accepted (hence we update the scores)
+
+            activityToEscapingEdges = tmpActivityToEscapingEdges;
+            activityToAllowed = tmpActivityToAllowed;
+            currETCPrecision = newETCPrecision;
+            return true;
+        }
+        return false;
     }
 
     public boolean checkImplicitness(Place p) {
@@ -162,25 +169,34 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
         removeFromActivityPlacesMapping(p);
 
-        boolean implicit = true;
+        Map<Activity, Integer> tmpActivityToEscapingEdges = new HashMap<>(activityToEscapingEdges);
+        Map<Activity, Integer> tmpActivityToAllowed = new HashMap<>(activityToAllowed);
 
         for (Activity a : activitiesToReevaluatePPotImpl) {
-
             int[] evalRes = evaluateEscapingEdges(a);
-            int oldEE = activityToEscapingEdges.get(a);
             int newEE = evalRes[0];
-            int oldAllowed = activityToAllowed.get(a);
             int newAllowed = evalRes[1];
 
-            if (!(oldEE == newEE && oldAllowed == newAllowed)) {
-                implicit = false;
-                break;
-            }
+            tmpActivityToEscapingEdges.put(a, newEE);
+            tmpActivityToAllowed.put(a, newAllowed);
+
         }
 
         addToActivityPlacesMapping(p);
 
-        return implicit;
+        double newETCPrecision = calcETCPrecision(tmpActivityToEscapingEdges, tmpActivityToAllowed);
+        if(currETCPrecision - newETCPrecision > gamma.getData().getG()) {
+            return false;
+        } else {
+            if(gamma.getData().getG() > 0.0) {
+                //EE-Scores might have changed (p is not necessarily implicit)
+                activityToEscapingEdges = tmpActivityToEscapingEdges;
+                activityToAllowed = tmpActivityToAllowed;
+                currETCPrecision = newETCPrecision;
+            }
+            return true;
+        }
+
     }
 
     @Override
@@ -269,17 +285,23 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
         if(newAddition) {
             newAddition = false;
-            if (optimalPrecisionReached()) {
-                return true;
-            } else {
-                return checkPrecisionThreshold(precisionThreshold.get().getP());
-            }
+            return checkPrecisionThreshold(rho.get().getP());
         } else {
             return false;
         }
     }
 
     public boolean checkPrecisionThreshold(double p) {
+        if(currETCPrecision >= p) {
+            System.out.println("PREMATURE ABORT precision threshold " + rho.get().getP() + " reached");
+            return true;
+        } else {
+            return false;
+        }
+
+    }
+
+    public double calcETCPrecision(Map<Activity, Integer> activityToEscapingEdges, Map<Activity, Integer> activityToAllowed) {
         int EE = 0;
         for (int i : activityToEscapingEdges.values()) {
             EE += i;
@@ -291,25 +313,10 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         //for starting activity:
         allowed += logSource.getData().totalTraceCount();
 
-        double precisionApprox = (1 - ((double)EE/allowed));
-        if(precisionApprox > p) {
-            System.out.println("PREMATURE ABORT precision threshold " + precisionThreshold.get().getP() + " reached");
-            return true;
-        } else {
-            return false;
-        }
-
+        return (1 - ((double)EE/allowed));
     }
 
-    public boolean optimalPrecisionReached() {
-        for(int i : activityToEscapingEdges.values()) {
-            if(i != 0){
-                return false;
-            }
-        }
-        System.out.println("PREMATURE ABORT optimal precision reached");
-        return true;
-    }
+
 
     public int[] evaluateEscapingEdges(Activity a) {
 

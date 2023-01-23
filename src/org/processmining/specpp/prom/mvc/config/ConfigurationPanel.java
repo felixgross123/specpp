@@ -104,7 +104,8 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
     private final ComboBoxAndTextBasedInputField<Double, OrderingRelation> heuristicThresholdInput;
     private final CheckboxedComboBox<ProMConfig.CIPRVariant> ciprVariantCheckboxedComboBox;
     private final JCheckBox ETCPrecisionOrientedComposerCheckBox;
-    private final TextBasedInputField<Double> ETCComposerThreshold;
+    private final TextBasedInputField<Double> ETCPrecisonThreshold;
+    private final TextBasedInputField<Double> precisionThreshold;
     private final JCheckBox logHeuristicsCheckBox;
     private final JCheckBox initiallyWireSelfLoopsCheckBox = SwingFactory.labeledCheckBox("initially wire self loops", false);
     private final HorizontalJPanel deltaRelatedParametersPanel;
@@ -260,13 +261,19 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         ETCPrecisionOrientedComposerCheckBox.addItemListener(e -> updatedCompositionSettings());
         ETCPrecisionOrientedComposerCheckBox.addActionListener(e -> ciprVariantCheckboxedComboBox.getCheckBox().setSelected(false));
         ciprVariantCheckboxedComboBox.getCheckBox().addActionListener(e -> ETCPrecisionOrientedComposerCheckBox.setSelected(false));
-        ETCComposerThreshold = SwingFactory.textBasedInputField("Threshold p", zeroOneDoubleFunc, 10);
-        ETCComposerThreshold.setText("1.0");
-        ETCComposerThreshold.setToolTipText("Precision Threshold in [0,1].");
-        ETCComposerThreshold.setVisible(false);
+        ETCPrecisonThreshold = SwingFactory.textBasedInputField("Threshold p", zeroOneDoubleFunc, 10);
+        ETCPrecisonThreshold.setText("1.0");
+        ETCPrecisonThreshold.setToolTipText("ETC-Precision Threshold rho in [0,1].");
+        ETCPrecisonThreshold.setVisible(false);
+        precisionThreshold = SwingFactory.textBasedInputField("Threshold g", zeroOneDoubleFunc, 10);
+        precisionThreshold.setText("1.0");
+        precisionThreshold.setToolTipText("Precision Threshold gamma in [0,1].");
+        precisionThreshold.setVisible(false);
+
 
         composition.append(ETCPrecisionOrientedComposerCheckBox);
-        composition.append(ETCComposerThreshold);
+        composition.append(ETCPrecisonThreshold);
+        composition.append(precisionThreshold);
 
         composition.completeWithWhitespace();
 
@@ -431,7 +438,8 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         pc.ppPipeline.forEach(ppPipelineModel::append);
         tauInput.setText(Double.toString(pc.tau));
         treeHeuristicAlpha.setText(Double.toString(pc.alpha));
-        ETCComposerThreshold.setText(Double.toString(pc.p));
+        ETCPrecisonThreshold.setText(Double.toString(pc.p));
+        precisionThreshold.setText(Double.toString(pc.g));
         deltaInput.setText(pc.delta < 0 ? null : Double.toString(pc.delta));
         steepnessInput.setText(pc.steepness < 0 ? null : Integer.toString(pc.steepness));
         if (pc.enforceHeuristicThreshold)
@@ -495,7 +503,8 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
                                                       .isSelected() ? (ProMConfig.CIPRVariant) ciprVariantCheckboxedComboBox.getComboBox()
                                                                                                                             .getSelectedItem() : ProMConfig.CIPRVariant.None;
         pc.useETCPrecisionOriented = ETCPrecisionOrientedComposerCheckBox.isSelected();
-        pc.p = ETCComposerThreshold.getInput();
+        pc.p = ETCPrecisonThreshold.getInput();
+        pc.g = precisionThreshold.getInput();
         pc.alpha = treeHeuristicAlpha.getInput();
 
         if (!validatePostProcessingPipeline(ppPipelineModel)) return null;
@@ -539,7 +548,8 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         initiallyWireSelfLoopsCheckBox.setVisible(compositionStrategyComboBox.getSelectedItem() == ProMConfig.CompositionStrategy.Uniwired || respectWiringCheckBox.isSelected());
         ciprVariantCheckboxedComboBox.getComboBox()
                                      .setVisible(ciprVariantCheckboxedComboBox.getCheckBox().isSelected());
-        ETCComposerThreshold.setVisible(ETCPrecisionOrientedComposerCheckBox.isSelected());
+        ETCPrecisonThreshold.setVisible(ETCPrecisionOrientedComposerCheckBox.isSelected());
+        precisionThreshold.setVisible(ETCPrecisionOrientedComposerCheckBox.isSelected());
         deltaAdaptationLabeledComboBox.setVisible(compositionStrategyComboBox.getSelectedItem() == ProMConfig.CompositionStrategy.TauDelta);
 
         changeDeltaParametersVisibility();

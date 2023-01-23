@@ -24,7 +24,6 @@ import org.processmining.specpp.datastructures.tree.nodegen.PlaceState;
 import org.processmining.specpp.evaluation.fitness.ReplayComputationParameters;
 import org.processmining.specpp.evaluation.heuristics.DirectlyFollowsHeuristic;
 import org.processmining.specpp.evaluation.heuristics.TreeHeuristicThreshold;
-import org.processmining.specpp.datastructures.tree.heuristic.UpdatableHeuristicExpansionStrategy;
 import org.processmining.specpp.evaluation.heuristics.UpdateGreedyTreeHeuristic;
 import org.processmining.specpp.evaluation.implicitness.ImplicitnessTestingParameters;
 import org.processmining.specpp.evaluation.implicitness.LPBasedImplicitnessCalculator;
@@ -175,7 +174,11 @@ public class ConfigurationController extends AbstractStageController {
                     globalComponentSystem().provide(ParameterRequirements.DELTA_PARAMETERS.fulfilWithStatic(new DeltaParameters(pc.delta, pc.steepness)))
                                            .provide(ParameterRequirements.DELTA_COMPOSER_PARAMETERS.fulfilWithStatic(DeltaComposerParameters.getDefault()));
                 }
-                if (pc.useETCPrecisionOriented) globalComponentSystem().provide(ParameterRequirements.PRECISION_TRHESHOLD.fulfilWithStatic(new PrecisionThreshold(pc.p)));
+                if (pc.useETCPrecisionOriented) {
+                    globalComponentSystem().provide(ParameterRequirements.PRECISION_TRHESHOLD_RHO.fulfilWithStatic(new ETCPrecisionThresholdRho(pc.p)));
+                    globalComponentSystem().provide(ParameterRequirements.PRECISION_TRHESHOLD_GAMMA.fulfilWithStatic(new PrecisionTresholdGamma(pc.g)));
+
+                }
                 if (pc.enforceHeuristicThreshold)
                     globalComponentSystem().provide(ParameterRequirements.TREE_HEURISTIC_THRESHOLD.fulfilWithStatic(new TreeHeuristicThreshold(pc.heuristicThreshold, pc.heuristicThresholdRelation)));
                 if(pc.treeExpansionSetting == ProMConfig.TreeExpansionSetting.Heuristic &&

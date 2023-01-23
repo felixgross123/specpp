@@ -99,7 +99,7 @@ public class DevelopmentEntryPoint {
                                        .provide(ParameterRequirements.PLACE_GENERATOR_PARAMETERS.fulfilWithStatic(new PlaceGeneratorParameters(5, true, false, false, false)))
                                        .provide(ParameterRequirements.SUPERVISION_PARAMETERS.fulfilWithStatic(SupervisionParameters.instrumentNone(true, false)))
                         .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(1)))
-                        .provide(ParameterRequirements.PRECISION_TRHESHOLD.fulfilWithStatic(new PrecisionThreshold(1)));
+                        .provide(ParameterRequirements.PRECISION_TRHESHOLD_RHO.fulfilWithStatic(new ETCPrecisionThresholdRho(1)));
             }
         };
 

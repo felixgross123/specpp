@@ -24,7 +24,7 @@ public class ProMConfig {
     public boolean initiallyWireSelfLoops;
     CIPRVariant ciprVariant;
     List<FrameworkBridge.AnnotatedPostProcessor> ppPipeline;
-    double tau, delta, p, alpha;
+    double tau, delta, p, g, alpha;
 
     boolean updateGreedy;
 
@@ -57,6 +57,7 @@ public class ProMConfig {
         pc.ciprVariant = CIPRVariant.ReplayBased;
         pc.useETCPrecisionOriented = false;
         pc.p = 1.0;
+        pc.g = 0.0;
         pc.ppPipeline = ImmutableList.of(FrameworkBridge.BridgedPostProcessors.LPBasedImplicitPlaceRemoval.getBridge(), FrameworkBridge.BridgedPostProcessors.ProMPetrinetConversion.getBridge());
         pc.tau = 1.0;
         pc.alpha = 1.0;
