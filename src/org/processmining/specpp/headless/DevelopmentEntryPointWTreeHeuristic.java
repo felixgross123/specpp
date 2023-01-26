@@ -13,6 +13,7 @@ import org.processmining.specpp.datastructures.petri.CollectionOfPlaces;
 import org.processmining.specpp.datastructures.petri.Place;
 import org.processmining.specpp.datastructures.petri.ProMPetrinetWrapper;
 import org.processmining.specpp.datastructures.tree.base.impls.EnumeratingTree;
+import org.processmining.specpp.datastructures.tree.heuristic.HeuristicTreeExpansion;
 import org.processmining.specpp.datastructures.tree.heuristic.TreeNodeScore;
 import org.processmining.specpp.datastructures.tree.nodegen.MonotonousPlaceGenerationLogic;
 import org.processmining.specpp.datastructures.tree.nodegen.PlaceNode;
@@ -65,10 +66,12 @@ public class DevelopmentEntryPointWTreeHeuristic {
 
 
         EfficientTreeConfiguration.Configurator<Place, PlaceState, PlaceNode> etConfig = Configurators.<Place, PlaceState, PlaceNode, TreeNodeScore>heuristicTree()
-                                                                                                      .heuristicExpansion(UpdateGreedyTreeHeuristic::new)
-                                                                                                      .heuristic(new GreedyETCPrecisionTreeHeuristic.Builder())
+                                                                                                      .heuristicExpansion(HeuristicTreeExpansion::new)
+                                                                                                      .heuristic(new MeanCrossMeanFirstOccIndexDeltaTreeHeuristic.Builder())
                                                                                                       .childGenerationLogic(new MonotonousPlaceGenerationLogic.Builder())
                                                                                                       .tree(EnumeratingTree::new);
+
+        //GreedyETC: .heuristicExpansion(UpdateGreedyTreeHeuristic::new).heuristic(new GreedyETCPrecisionTreeHeuristic.Builder())
 
         // ** Proposal & Composition ** //
 
@@ -99,11 +102,12 @@ public class DevelopmentEntryPointWTreeHeuristic {
         ParameterProvider parProv = new ParameterProvider() {
             @Override
             public void init() {
-                globalComponentSystem().provide(ParameterRequirements.PLACE_GENERATOR_PARAMETERS.fulfilWithStatic(new PlaceGeneratorParameters(7, true, false, false, false)))
+                globalComponentSystem().provide(ParameterRequirements.PLACE_GENERATOR_PARAMETERS.fulfilWithStatic(new PlaceGeneratorParameters(5, true, false, false, false)))
                                        .provide(ParameterRequirements.SUPERVISION_PARAMETERS.fulfilWithStatic(SupervisionParameters.instrumentNone(true, false)))
                         .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(0.6)))
                         .provide(ParameterRequirements.PRECISION_TRHESHOLD_RHO.fulfilWithStatic(new ETCPrecisionThresholdRho(1.0)))
-                        .provide(ParameterRequirements.TREEHEURISTIC_ALPHA.fulfilWithStatic(new TreeHeuristcAlpha(1.0)));
+                        .provide(ParameterRequirements.TREEHEURISTIC_ALPHA.fulfilWithStatic(new TreeHeuristcAlpha(1.0)))
+                        .provide(ParameterRequirements.PRECISION_TRHESHOLD_GAMMA.fulfilWithStatic(new PrecisionTresholdGamma(0)));
             }
         };
 

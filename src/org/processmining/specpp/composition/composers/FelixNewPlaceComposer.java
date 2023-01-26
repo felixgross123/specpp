@@ -53,6 +53,8 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     private final EventSupervision<CandidateCompositionEvent<Place>> compositionEventSupervision = PipeWorks.eventSupervision();
     private double currETCPrecision;
 
+    private boolean newAddition = false;
+
     public FelixNewPlaceComposer(I composition) {
         super(composition, c -> new CollectionOfPlaces(c.toList()));
 
@@ -72,6 +74,11 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         localComponentSystem().provide(SupervisionRequirements.observable("composer.events", JavaTypingUtils.castClass(CandidateCompositionEvent.class), compositionEventSupervision));
     }
 
+    /**
+     * Deliberate, whether place should be added to the composition or not
+     * @param candidate the candidate to decide acceptance for
+     * @return true, if candidate should be added. Otherwise, false.
+     */
     @Override
     protected boolean deliberateAcceptance(Place candidate) {
 
@@ -123,6 +130,11 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         }
     }
 
+    /**
+     * check (tau=1) / approximate (tau<1) whether a place makes the intermediate result sufficiently more precise
+     * @param p place
+     * @return true, if p is not implicit / sufficiently improves precision. Otherwise, false.
+     */
     public boolean checkPrecisionGain(Place p) {
         BitEncodedSet<Transition> candidateOut = p.postset();
         Set<Activity> activitiesToRevealuate = new HashSet<>();
@@ -130,6 +142,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
             activitiesToRevealuate.add(actTransMapping.getData().getKey(t));
         }
 
+        boolean isMorePrecise = false;
 
         addToActivityPlacesMapping(p);
 
@@ -137,9 +150,17 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         Map<Activity, Integer> tmpActivityToAllowed = new HashMap<>(activityToAllowed);
 
         for (Activity a : activitiesToRevealuate) {
-            int[] evalRes = evaluateEscapingEdges(a);
+            int[] evalRes = evaluatePrecision(a);
             int newEE = evalRes[0];
             int newAllowed = evalRes[1];
+
+            if (newEE < activityToEscapingEdges.get(a)) {
+                isMorePrecise = true;
+            }
+
+            if (newAllowed > activityToAllowed.get(a) || newEE > activityToEscapingEdges.get(a)) {
+                System.out.println("fail");
+            }
 
             tmpActivityToEscapingEdges.put(a, newEE);
             tmpActivityToAllowed.put(a, newAllowed);
@@ -148,9 +169,19 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         removeFromActivityPlacesMapping(p);
 
         double newETCPrecision = calcETCPrecision(tmpActivityToEscapingEdges, tmpActivityToAllowed);
+
+        if (gamma.getData().getG() == 0) {
+            if(isMorePrecise) {
+                activityToEscapingEdges = tmpActivityToEscapingEdges;
+                activityToAllowed = tmpActivityToAllowed;
+                currETCPrecision = newETCPrecision;
+                return true;
+            }
+            return false;
+        }
+
         if (newETCPrecision - currETCPrecision > gamma.getData().getG() ) {
             //note: if p brings gain in precision we assume that it will be accepted (hence we update the scores)
-
             activityToEscapingEdges = tmpActivityToEscapingEdges;
             activityToAllowed = tmpActivityToAllowed;
             currETCPrecision = newETCPrecision;
@@ -159,6 +190,11 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         return false;
     }
 
+    /**
+     * check (tau=1) / approximate (tau<1) whether a place is implicit / insufficiently constrains precision
+     * @param p place
+     * @return true, if p is implicit / insufficiently constrains precision. Otherwise, false.
+     */
     public boolean checkImplicitness(Place p) {
 
         BitEncodedSet<Transition> pPotImplOut = p.postset();
@@ -172,10 +208,16 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         Map<Activity, Integer> tmpActivityToEscapingEdges = new HashMap<>(activityToEscapingEdges);
         Map<Activity, Integer> tmpActivityToAllowed = new HashMap<>(activityToAllowed);
 
+        boolean hasEqualValues = true;
+
         for (Activity a : activitiesToReevaluatePPotImpl) {
-            int[] evalRes = evaluateEscapingEdges(a);
+            int[] evalRes = evaluatePrecision(a);
             int newEE = evalRes[0];
             int newAllowed = evalRes[1];
+
+            if((newEE != activityToEscapingEdges.get(a)) || newAllowed != activityToAllowed.get(a)) {
+                hasEqualValues = false;
+            }
 
             tmpActivityToEscapingEdges.put(a, newEE);
             tmpActivityToAllowed.put(a, newAllowed);
@@ -185,20 +227,25 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         addToActivityPlacesMapping(p);
 
         double newETCPrecision = calcETCPrecision(tmpActivityToEscapingEdges, tmpActivityToAllowed);
+        if(gamma.getData().getG() == 0) {
+            return hasEqualValues;
+        }
+
         if(currETCPrecision - newETCPrecision > gamma.getData().getG()) {
             return false;
         } else {
-            if(gamma.getData().getG() > 0.0) {
-                //EE-Scores might have changed (p is not necessarily implicit)
-                activityToEscapingEdges = tmpActivityToEscapingEdges;
-                activityToAllowed = tmpActivityToAllowed;
-                currETCPrecision = newETCPrecision;
-            }
+            activityToEscapingEdges = tmpActivityToEscapingEdges;
+            activityToAllowed = tmpActivityToAllowed;
+            currETCPrecision = newETCPrecision;
             return true;
         }
 
     }
 
+    /**
+     * Hook, executed when candidate is revoked (is implicit) -> Update mappings
+     * @param candidate the accepted candidate
+     */
     @Override
     protected void acceptanceRevoked(Place candidate) {
         //update ActivityPlaceMapping
@@ -206,20 +253,19 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         compositionEventSupervision.observe(new CandidateAcceptanceRevoked<>(candidate));
     }
 
+    /**
+     * Hook, executed when candidate is accepted (is more precise) -> Update mappings
+     * @param candidate the accepted candidate
+     */
     @Override
     protected void candidateAccepted(Place candidate) {
-        //update ActivityPlaceMapping
         addToActivityPlacesMapping(candidate);
-
         compositionEventSupervision.observe(new CandidateAccepted<>(candidate));
 
     }
 
     @Override
     protected void candidateRejected(Place candidate) {
-
-        //check levelChange
-
         compositionEventSupervision.observe(new CandidateRejected<>(candidate));
 
     }
@@ -231,10 +277,11 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     }
 
 
-
+    /**
+     * Initialize the ETC-based Composer: Build-Prefix Automaton and Look-Up Tables
+     */
     @Override
     protected void initSelf() {
-
         // Build Prefix-Automaton
         Log log = logSource.getData();
         for(IndexedVariant indexedVariant : log) {
@@ -252,7 +299,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         Set<Activity> activities = actTransMapping.getData().keySet();
         for(Activity a : activities) {
             if(!a.equals(Factory.ARTIFICIAL_START)) {
-                int[] evalRes = evaluateEscapingEdges(a);
+                int[] evalRes = evaluatePrecision(a);
                 int EE = evalRes[0];
                 int allowed = evalRes[1];
                 activityToEscapingEdges.put(a, EE);
@@ -262,6 +309,10 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         System.out.println(".");
     }
 
+    /**
+     * Add a place test-wise
+     * @param p place
+     */
     private void addToActivityPlacesMapping(Place p){
         for(Transition t : p.postset()) {
             Activity a = actTransMapping.get().getKey(t);
@@ -270,6 +321,10 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         }
     }
 
+    /**
+     * Remove a place test-wise
+     * @param p place
+     */
     private void removeFromActivityPlacesMapping(Place p){
         for(Transition t : p.postset()) {
             Activity a = actTransMapping.get().getKey(t);
@@ -278,11 +333,13 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         }
     }
 
-    private boolean newAddition = false;
 
+    /**
+     * Check whether search can be aborted prematurely
+     * @return true, if search can be aborted. Otherwise, false.
+     */
     @Override
     public boolean isFinished() {
-
         if(newAddition) {
             newAddition = false;
             return checkPrecisionThreshold(rho.get().getP());
@@ -291,6 +348,10 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         }
     }
 
+    /**
+     * Check whether precision threshold rho has been met
+     * @return true, if threshold is reached. Otherwise, false.
+     */
     public boolean checkPrecisionThreshold(double p) {
         if(currETCPrecision >= p) {
             System.out.println("PREMATURE ABORT precision threshold " + rho.get().getP() + " reached");
@@ -301,6 +362,12 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
     }
 
+    /**
+     * Calculates the (approximate) ETC-precision based on the given Look-Up Tables
+     * @param activityToEscapingEdges Mapping from activities to #EscapingEdges
+     * @param activityToAllowed Mapping from activities to #Allowed
+     * @return (approximate) ETC-precision
+     */
     public double calcETCPrecision(Map<Activity, Integer> activityToEscapingEdges, Map<Activity, Integer> activityToAllowed) {
         int EE = 0;
         for (int i : activityToEscapingEdges.values()) {
@@ -317,8 +384,12 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     }
 
 
-
-    public int[] evaluateEscapingEdges(Activity a) {
+    /**
+     * evaluate (tau=1) / approximate (tau<1) the precision of an activity
+     * @param a activity to evaluate
+     * @return Integer-array of size two. [0]-#EscapingEdges a, [1]-#Allowed a
+     */
+    public int[] evaluatePrecision(Activity a) {
 
         int escapingEdges = 0;
         int allowed = 0;
