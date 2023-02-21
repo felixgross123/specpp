@@ -158,10 +158,6 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
                 isMorePrecise = true;
             }
 
-            if (newAllowed > activityToAllowed.get(a) || newEE > activityToEscapingEdges.get(a)) {
-                System.out.println("fail");
-            }
-
             tmpActivityToEscapingEdges.put(a, newEE);
             tmpActivityToAllowed.put(a, newAllowed);
         }
@@ -309,7 +305,6 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
                 activityToAllowed.put(a, allowed);
             }
         }
-        System.out.println(".");
     }
 
     /**
