@@ -38,7 +38,7 @@ import org.processmining.specpp.util.PublicPaths;
 public class DevelopmentEntryPoint {
 
     public static void main(String[] args) {
-        String path = PublicPaths.REALLIFE_RTFM;
+        String path = PublicPaths.ARTIFICIAL_LONGTERMDEPENDENCIES;
         PreProcessingParameters prePar = new PreProcessingParameters(new XEventNameClassifier(), true, AverageFirstOccurrenceIndex.class);
         InputDataBundle inputData = InputData.loadData(path, prePar).getData();
         SPECppConfigBundle configuration = createConfiguration();

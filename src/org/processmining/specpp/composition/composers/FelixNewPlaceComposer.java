@@ -217,6 +217,9 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
             if((newEE != activityToEscapingEdges.get(a)) || newAllowed != activityToAllowed.get(a)) {
                 hasEqualValues = false;
+                if(gamma.getData().getG() == 0) {
+                    break;
+                }
             }
 
             tmpActivityToEscapingEdges.put(a, newEE);
