@@ -96,17 +96,21 @@ public class ConfigurationController extends AbstractStageController {
             pcCfg.terminalComposer(PlaceAccepter::new);
         }
 
-        InitializingBuilder<? extends ComposerComponent<Place, AdvancedComposition<Place>, CollectionOfPlaces>, ComposerComponent<Place, AdvancedComposition<Place>, CollectionOfPlaces>> fitnessFilterBuilder = isSupervisingEvents ? EventingPlaceFitnessFilter::new : PlaceFitnessFilter::new;
-        switch (pc.compositionStrategy) {
-            case Standard:
-                pcCfg.composerChain(fitnessFilterBuilder);
-                break;
-            case TauDelta:
-                pcCfg.composerChain(fitnessFilterBuilder, DeltaComposer::new);
-                break;
-            case Uniwired:
-                pcCfg.composerChain(fitnessFilterBuilder, UniwiredComposer::new);
-                break;
+        if(pc.useETCPrecisionOriented && pc.cutOffETC) {
+            pcCfg.composerChain(ETCPrecisionCutOffComposer::new, PlaceFitnessFilter::new);
+        } else {
+            InitializingBuilder<? extends ComposerComponent<Place, AdvancedComposition<Place>, CollectionOfPlaces>, ComposerComponent<Place, AdvancedComposition<Place>, CollectionOfPlaces>> fitnessFilterBuilder = isSupervisingEvents ? EventingPlaceFitnessFilter::new : PlaceFitnessFilter::new;
+            switch (pc.compositionStrategy) {
+                case Standard:
+                    pcCfg.composerChain(fitnessFilterBuilder);
+                    break;
+                case TauDelta:
+                    pcCfg.composerChain(fitnessFilterBuilder, DeltaComposer::new);
+                    break;
+                case Uniwired:
+                    pcCfg.composerChain(fitnessFilterBuilder, UniwiredComposer::new);
+                    break;
+            }
         }
 
         // ** EVALUATION ** //

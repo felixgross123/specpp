@@ -31,6 +31,7 @@ import org.processmining.specpp.datastructures.transitionSystems.PAState;
 import org.processmining.specpp.datastructures.transitionSystems.PrefixAutomaton;
 import org.processmining.specpp.datastructures.tree.constraints.ClinicallyUnderfedPlace;
 import org.processmining.specpp.datastructures.tree.constraints.ETCPrecisionConstraint;
+import org.processmining.specpp.datastructures.util.BasicCache;
 import org.processmining.specpp.datastructures.vectorization.VariantMarkingHistories;
 import org.processmining.specpp.supervision.EventSupervision;
 import org.processmining.specpp.supervision.observations.DebugEvent;
@@ -40,6 +41,8 @@ import org.processmining.specpp.util.JavaTypingUtils;
 
 import java.nio.IntBuffer;
 import java.util.*;
+
+import static org.processmining.specpp.componenting.data.DataRequirements.dataSource;
 
 public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends AbstractComposer<Place, I, CollectionOfPlaces> implements ConstrainingComposer<Place, I, CollectionOfPlaces, CandidateConstraint<Place>> {
 
@@ -69,6 +72,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         ConsumingContainer<DataSource<DelegatingDataSource<Map<Activity, Integer>>>> consActivitiesToEscapingEdges1 = new ConsumingContainer<>(del -> del.getData().setDelegate(StaticDataSource.of(activityToEscapingEdges)));
         globalComponentSystem().require(DataRequirements.dataSource("activitiesToEscapingEdges_Map_1", JavaTypingUtils.castClass(DelegatingDataSource.class)), consActivitiesToEscapingEdges1);
 
+
         globalComponentSystem().require(DataRequirements.RAW_LOG, logSource)
                                .require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping)
                                .require(EvaluationRequirements.PLACE_MARKING_HISTORY, markingHistoriesEvaluator)
@@ -76,10 +80,12 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
                                .require(ParameterRequirements.PRECISION_TRHESHOLD_GAMMA, gamma)
                                .require(ParameterRequirements.CUTOFF_ETC, cutOff)
                                .provide(SupervisionRequirements.observable("felix.debug", DebugEvent.class, eventSupervisor))
-                               .provide(SupervisionRequirements.observable("composer.constraints.ETCutOff", getPublishedConstraintClass(), getConstraintPublisher()));
+                               .provide(SupervisionRequirements.observable("composer.constraints.ETCCutOff", getPublishedConstraintClass(), getConstraintPublisher()))
+                                .provide(DataRequirements.dataSource("activitiesToAllowed", JavaTypingUtils.castClass(Map.class), StaticDataSource.of(activityToAllowed)))
+                                .provide(DataRequirements.dataSource("activitiesToEscapingEdges", JavaTypingUtils.castClass(Map.class), StaticDataSource.of(activityToEscapingEdges)));
 
         localComponentSystem().provide(SupervisionRequirements.observable("composer.events", JavaTypingUtils.castClass(CandidateCompositionEvent.class), compositionEventSupervision))
-                              .provide(SupervisionRequirements.observable("composer.constraints.ETCutOff", getPublishedConstraintClass(), getConstraintPublisher()));
+                              .provide(SupervisionRequirements.observable("composer.constraints.ETCCutOff", getPublishedConstraintClass(), getConstraintPublisher()));
     }
 
 
