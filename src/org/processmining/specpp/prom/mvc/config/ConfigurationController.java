@@ -177,7 +177,7 @@ public class ConfigurationController extends AbstractStageController {
                 if (pc.useETCPrecisionOriented) {
                     globalComponentSystem().provide(ParameterRequirements.PRECISION_TRHESHOLD_RHO.fulfilWithStatic(new ETCPrecisionThresholdRho(pc.p)));
                     globalComponentSystem().provide(ParameterRequirements.PRECISION_TRHESHOLD_GAMMA.fulfilWithStatic(new PrecisionTresholdGamma(pc.g)));
-
+                    globalComponentSystem().provide(ParameterRequirements.CUTOFF_ETC.fulfilWithStatic(new CutOffETCBasedPrecision(pc.cutOffETC)));
                 }
                 if (pc.enforceHeuristicThreshold)
                     globalComponentSystem().provide(ParameterRequirements.TREE_HEURISTIC_THRESHOLD.fulfilWithStatic(new TreeHeuristicThreshold(pc.heuristicThreshold, pc.heuristicThresholdRelation)));

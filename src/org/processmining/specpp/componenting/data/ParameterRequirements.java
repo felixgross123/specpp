@@ -17,6 +17,7 @@ public class ParameterRequirements {
     public static final ParameterRequirement<PrecisionTresholdGamma> PRECISION_TRHESHOLD_GAMMA = parameters("precision_threshold_gamma", PrecisionTresholdGamma.class);
 
     public static final ParameterRequirement<TreeHeuristcAlpha> TREEHEURISTIC_ALPHA = parameters("treeheuristic_alpha", TreeHeuristcAlpha.class);
+    public static final ParameterRequirement<CutOffETCBasedPrecision> CUTOFF_ETC = parameters("cutoff_etc", CutOffETCBasedPrecision.class);
 
     public static final ParameterRequirement<DeltaParameters> DELTA_PARAMETERS = parameters("delta.parameters", DeltaParameters.class);
     public static final ParameterRequirement<SupervisionParameters> SUPERVISION_PARAMETERS = parameters("supervision.parameters", SupervisionParameters.class);
@@ -27,6 +28,7 @@ public class ParameterRequirements {
     public static final ParameterRequirement<ExternalInitializationParameters> EXTERNAL_INITIALIZATION = parameters("external_initialization.parameters", ExternalInitializationParameters.class);
     public static final ParameterRequirement<DeltaComposerParameters> DELTA_COMPOSER_PARAMETERS = parameters("delta_composer.parameters", DeltaComposerParameters.class);
     public static ParameterRequirement<TreeHeuristicThreshold> TREE_HEURISTIC_THRESHOLD = parameters("tree.heuristic.parameters", TreeHeuristicThreshold.class);
+
 
     public static <P extends Parameters> ParameterRequirement<P> parameters(String label, Class<P> type) {
         return new ParameterRequirement<>(label, type);

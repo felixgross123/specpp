@@ -7,7 +7,7 @@ public class PrecisionTresholdGamma implements Parameters {
     }
 
     public static PrecisionTresholdGamma getDefault() {
-        return g(0.0);
+        return g(0);
     }
 
     private final double g;

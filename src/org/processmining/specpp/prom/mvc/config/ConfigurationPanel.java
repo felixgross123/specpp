@@ -41,6 +41,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
     private final JCheckBox concurrentReplayCheckBox;
 
     private final JCheckBox updateGreedyTreeHeuristic;
+    private final JCheckBox cutOffETC;
 
     private final JComboBox<FrameworkBridge.AnnotatedEvaluator> deltaAdaptationFunctionComboBox;
     private final JComboBox<ProMConfig.CompositionStrategy> compositionStrategyComboBox;
@@ -269,11 +270,14 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         precisionThreshold.setText("1.0");
         precisionThreshold.setToolTipText("Precision Threshold gamma in [0,1].");
         precisionThreshold.setVisible(false);
-
+        cutOffETC = SwingFactory.labeledCheckBox("Cut off Subtrees?", false);
+        cutOffETC.setToolTipText("Enable cutting of Subtrees if place sufficiently constraints escaping edges according to rho");
+        cutOffETC.setVisible(false);
 
         composition.append(ETCPrecisionOrientedComposerCheckBox);
         composition.append(ETCPrecisonThreshold);
         composition.append(precisionThreshold);
+        composition.append(cutOffETC);
 
         composition.completeWithWhitespace();
 
@@ -417,6 +421,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         supportRestartCheckBox.setSelected(pc.supportRestart);
         bridgedHeuristicsLabeledComboBox.getComboBox().setSelectedItem(pc.treeHeuristic);
         updateGreedyTreeHeuristic.setSelected(pc.updateGreedy);
+        cutOffETC.setSelected(pc.cutOffETC);
         enforceHeuristicScoreThresholdCheckBox.setSelected(pc.enforceHeuristicThreshold);
         concurrentReplayCheckBox.setSelected(pc.concurrentReplay);
         permitNegativeMarkingsCheckBox.setSelected(pc.permitNegativeMarkingsDuringReplay);
@@ -480,6 +485,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         pc.supportRestart = supportRestartCheckBox.isSelected();
         pc.treeHeuristic = (FrameworkBridge.AnnotatedTreeHeuristic) bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem();
         pc.updateGreedy = updateGreedyTreeHeuristic.isSelected();
+        pc.cutOffETC = cutOffETC.isSelected();
         pc.enforceHeuristicThreshold = enforceHeuristicScoreThresholdCheckBox.isSelected();
         pc.concurrentReplay = concurrentReplayCheckBox.isSelected();
         pc.permitNegativeMarkingsDuringReplay = permitNegativeMarkingsCheckBox.isSelected();
@@ -550,6 +556,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
                                      .setVisible(ciprVariantCheckboxedComboBox.getCheckBox().isSelected());
         ETCPrecisonThreshold.setVisible(ETCPrecisionOrientedComposerCheckBox.isSelected());
         precisionThreshold.setVisible(ETCPrecisionOrientedComposerCheckBox.isSelected());
+        cutOffETC.setVisible(ETCPrecisionOrientedComposerCheckBox.isSelected());
         deltaAdaptationLabeledComboBox.setVisible(compositionStrategyComboBox.getSelectedItem() == ProMConfig.CompositionStrategy.TauDelta);
 
         changeDeltaParametersVisibility();

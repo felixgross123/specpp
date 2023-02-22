@@ -3,7 +3,9 @@ package org.processmining.specpp.composition.composers;
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.MapIterator;
 import org.processmining.specpp.base.AdvancedComposition;
+import org.processmining.specpp.base.ConstrainingComposer;
 import org.processmining.specpp.base.impls.AbstractComposer;
+import org.processmining.specpp.base.impls.CandidateConstraint;
 import org.processmining.specpp.componenting.data.DataRequirements;
 import org.processmining.specpp.componenting.data.DataSource;
 import org.processmining.specpp.componenting.data.ParameterRequirements;
@@ -13,10 +15,8 @@ import org.processmining.specpp.componenting.delegators.DelegatingDataSource;
 import org.processmining.specpp.componenting.delegators.DelegatingEvaluator;
 import org.processmining.specpp.componenting.evaluation.EvaluationRequirements;
 import org.processmining.specpp.componenting.supervision.SupervisionRequirements;
-import org.processmining.specpp.composition.events.CandidateAcceptanceRevoked;
-import org.processmining.specpp.composition.events.CandidateAccepted;
-import org.processmining.specpp.composition.events.CandidateCompositionEvent;
-import org.processmining.specpp.composition.events.CandidateRejected;
+import org.processmining.specpp.composition.events.*;
+import org.processmining.specpp.config.parameters.CutOffETCBasedPrecision;
 import org.processmining.specpp.config.parameters.ETCPrecisionThresholdRho;
 import org.processmining.specpp.config.parameters.PrecisionTresholdGamma;
 import org.processmining.specpp.datastructures.encoding.BitEncodedSet;
@@ -29,16 +29,19 @@ import org.processmining.specpp.datastructures.petri.Place;
 import org.processmining.specpp.datastructures.petri.Transition;
 import org.processmining.specpp.datastructures.transitionSystems.PAState;
 import org.processmining.specpp.datastructures.transitionSystems.PrefixAutomaton;
+import org.processmining.specpp.datastructures.tree.constraints.ClinicallyUnderfedPlace;
+import org.processmining.specpp.datastructures.tree.constraints.ETCPrecisionConstraint;
 import org.processmining.specpp.datastructures.vectorization.VariantMarkingHistories;
 import org.processmining.specpp.supervision.EventSupervision;
 import org.processmining.specpp.supervision.observations.DebugEvent;
+import org.processmining.specpp.supervision.piping.Observable;
 import org.processmining.specpp.supervision.piping.PipeWorks;
 import org.processmining.specpp.util.JavaTypingUtils;
 
 import java.nio.IntBuffer;
 import java.util.*;
 
-public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends AbstractComposer<Place, I, CollectionOfPlaces> {
+public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends AbstractComposer<Place, I, CollectionOfPlaces> implements ConstrainingComposer<Place, I, CollectionOfPlaces, CandidateConstraint<Place>> {
 
     private final DelegatingDataSource<Log> logSource = new DelegatingDataSource<>();
     private final DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping = new DelegatingDataSource<>();
@@ -46,13 +49,15 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     private final EventSupervision<DebugEvent> eventSupervisor = PipeWorks.eventSupervision();
     private final DelegatingDataSource<ETCPrecisionThresholdRho> rho = new DelegatingDataSource<>();
     private final DelegatingDataSource<PrecisionTresholdGamma> gamma = new DelegatingDataSource<>();
+
+    private final DelegatingDataSource<CutOffETCBasedPrecision> cutOff = new DelegatingDataSource<>();
     private final PrefixAutomaton prefixAutomaton = new PrefixAutomaton(new PAState());
     private final Map<Activity, Set<Place>> activityToIngoingPlaces = new HashMap<>();
     private Map<Activity, Integer> activityToEscapingEdges = new HashMap<>();
     private Map<Activity, Integer> activityToAllowed = new HashMap<>();
     private final EventSupervision<CandidateCompositionEvent<Place>> compositionEventSupervision = PipeWorks.eventSupervision();
+    private final EventSupervision<CandidateConstraint<Place>> constraintEvents = PipeWorks.eventSupervision();
     private double currETCPrecision;
-
     private boolean newAddition = false;
 
     public FelixNewPlaceComposer(I composition) {
@@ -69,10 +74,14 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
                                .require(EvaluationRequirements.PLACE_MARKING_HISTORY, markingHistoriesEvaluator)
                                .require(ParameterRequirements.PRECISION_TRHESHOLD_RHO, rho)
                                .require(ParameterRequirements.PRECISION_TRHESHOLD_GAMMA, gamma)
-                               .provide(SupervisionRequirements.observable("felix.debug", DebugEvent.class, eventSupervisor));
+                               .require(ParameterRequirements.CUTOFF_ETC, cutOff)
+                               .provide(SupervisionRequirements.observable("felix.debug", DebugEvent.class, eventSupervisor))
+                               .provide(SupervisionRequirements.observable("composer.constraints.ETCutOff", getPublishedConstraintClass(), getConstraintPublisher()));
 
-        localComponentSystem().provide(SupervisionRequirements.observable("composer.events", JavaTypingUtils.castClass(CandidateCompositionEvent.class), compositionEventSupervision));
+        localComponentSystem().provide(SupervisionRequirements.observable("composer.events", JavaTypingUtils.castClass(CandidateCompositionEvent.class), compositionEventSupervision))
+                              .provide(SupervisionRequirements.observable("composer.constraints.ETCutOff", getPublishedConstraintClass(), getConstraintPublisher()));
     }
+
 
     /**
      * Deliberate, whether place should be added to the composition or not
@@ -261,14 +270,36 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         addToActivityPlacesMapping(candidate);
         compositionEventSupervision.observe(new CandidateAccepted<>(candidate));
 
+        if (cutOff.getData().getCutOff()) {
+            double partPrecision = calcPartETCPrecision(candidate);
+            if(partPrecision >= rho.getData().getP()) {
+                constraintEvents.observe(new ETCPrecisionConstraint(candidate));
+            }
+        }
     }
 
     @Override
     protected void candidateRejected(Place candidate) {
         compositionEventSupervision.observe(new CandidateRejected<>(candidate));
 
+        if (cutOff.getData().getCutOff()) {
+            double partPrecision = calcPartETCPrecision(candidate);
+            if(partPrecision >= rho.getData().getP()) {
+                constraintEvents.observe(new ETCPrecisionConstraint(candidate));
+            }
+        }
     }
 
+    public double calcPartETCPrecision(Place candidate) {
+        int sumAllowed = 0;
+        int sumEscaping = 0;
+        for(Transition t : candidate.postset()) {
+            Activity a = actTransMapping.getData().getKey(t);
+            sumAllowed += activityToAllowed.get(a);
+            sumEscaping += activityToEscapingEdges.get(a);
+        }
+        return 1.0 - ((double) sumEscaping /(double) sumAllowed);
+    }
 
     @Override
     public void candidatesAreExhausted() {
@@ -446,6 +477,16 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         return new int[]{escapingEdges, allowed};
     }
 
+
+    @Override
+    public Observable<CandidateConstraint<Place>> getConstraintPublisher() {
+        return constraintEvents;
+    }
+
+    @Override
+    public Class<CandidateConstraint<Place>> getPublishedConstraintClass() {
+        return JavaTypingUtils.castClass(CandidateConstraint.class);
+    }
 
 
 

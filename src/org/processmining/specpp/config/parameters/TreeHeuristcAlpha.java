@@ -7,21 +7,17 @@ public class TreeHeuristcAlpha implements Parameters {
     }
 
     public static TreeHeuristcAlpha getDefault() {
-        return alpha(1.0);
+        return alpha(1);
     }
 
     private final double alpha;
 
-    public TreeHeuristcAlpha(double p) {
-        this.alpha = p;
+    public TreeHeuristcAlpha(double alpha) {
+        this.alpha = alpha;
     }
 
     public double getAlpha() {
         return alpha;
     }
 
-    @Override
-    public String toString() {
-        return "PrecisionThreshold(p=" + alpha + ")";
-    }
 }

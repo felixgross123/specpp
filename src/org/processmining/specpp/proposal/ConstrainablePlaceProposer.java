@@ -101,6 +101,9 @@ public class ConstrainablePlaceProposer extends AbstractBaseClass implements Con
             if (state.getPotentialPostsetExpansions().isEmpty() && !state.getPotentialPresetExpansions().isEmpty()) {
                 constraintOutput.observe(new CullPresetChildren(placeNode));
             }
+        } else if (candidateConstraint instanceof ETCPrecisionConstraint) {
+            constraintOutput.observe(new CullPostsetChildren(placeNode));
+            constraintOutput.observe(new CullPresetChildren(placeNode));
         }
     }
 
