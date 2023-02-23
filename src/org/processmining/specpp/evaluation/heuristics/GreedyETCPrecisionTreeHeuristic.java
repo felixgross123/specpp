@@ -2,10 +2,13 @@ package org.processmining.specpp.evaluation.heuristics;
 
 import org.apache.commons.collections4.BidiMap;
 import org.processmining.specpp.componenting.data.DataRequirements;
+import org.processmining.specpp.componenting.data.ParameterRequirements;
 import org.processmining.specpp.componenting.delegators.DelegatingDataSource;
 import org.processmining.specpp.componenting.system.ComponentSystemAwareBuilder;
 import org.processmining.specpp.componenting.system.link.AbstractBaseClass;
 import org.processmining.specpp.composition.composers.FelixNewPlaceComposer;
+import org.processmining.specpp.config.parameters.TreeHeuristcAlpha;
+import org.processmining.specpp.datastructures.encoding.IntEncodings;
 import org.processmining.specpp.datastructures.log.Activity;
 import org.processmining.specpp.datastructures.log.Log;
 import org.processmining.specpp.datastructures.log.Variant;
@@ -24,14 +27,26 @@ import java.util.*;
 
 public class GreedyETCPrecisionTreeHeuristic extends AbstractBaseClass implements HeuristicStrategy<PlaceNode, TreeNodeScore>, ZeroOneBounded, SubtreeMonotonicity.Decreasing {
 
-    private final DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping;
+    private final BidiMap<Activity, Transition> actTransMapping;
+    private final DelegatingDataSource<Map<Activity, Integer>> delegatingDataSourceE = new DelegatingDataSource<>(HashMap::new);
+    private final DelegatingDataSource<Map<Activity, Integer>> delegatingDataSourceA = new DelegatingDataSource<>(HashMap::new);
 
-    private final DelegatingDataSource<Map<Activity, Integer>> delegatingDataSource = new DelegatingDataSource<>(HashMap::new);
+    private final double alpha;
+
+    private final int maxSize;
 
 
-    public GreedyETCPrecisionTreeHeuristic( DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping) {
+    public GreedyETCPrecisionTreeHeuristic(BidiMap<Activity, Transition> actTransMapping, int maxSize, double alpha) {
         this.actTransMapping = actTransMapping;
-        globalComponentSystem().provide(DataRequirements.dataSource("activitiesToEscapingEdges_Map", JavaTypingUtils.castClass(DelegatingDataSource.class)).fulfilWithStatic(delegatingDataSource));
+        this.alpha = alpha;
+
+        this.maxSize = maxSize;
+
+
+
+        globalComponentSystem()
+                .provide(DataRequirements.dataSource("activitiesToEscapingEdges_GreedyETC", JavaTypingUtils.castClass(DelegatingDataSource.class)).fulfilWithStatic(delegatingDataSourceE))
+                .provide(DataRequirements.dataSource("activitiesToAllowed_GreedyETC", JavaTypingUtils.castClass(DelegatingDataSource.class)).fulfilWithStatic(delegatingDataSourceA));
     }
 
     @Override
@@ -46,14 +61,18 @@ public class GreedyETCPrecisionTreeHeuristic extends AbstractBaseClass implement
         final DelegatingDataSource<Log> rawLog = new DelegatingDataSource<>();
         private final DelegatingDataSource<BidiMap<Activity, Transition>> actTransMapping = new DelegatingDataSource<>();
 
+        private final DelegatingDataSource<TreeHeuristcAlpha> delAlpha = new DelegatingDataSource<>();
+
+        private final DelegatingDataSource<IntEncodings<Activity>> encAct = new DelegatingDataSource<>();
 
         public Builder() {
-            globalComponentSystem().require(DataRequirements.RAW_LOG, rawLog).require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping);
+            globalComponentSystem().require(DataRequirements.RAW_LOG, rawLog).require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping).require(DataRequirements.ENC_ACT, encAct).require(ParameterRequirements.TREEHEURISTIC_ALPHA, delAlpha);
         }
 
         @Override
         protected GreedyETCPrecisionTreeHeuristic buildIfFullySatisfied() {
-            return new GreedyETCPrecisionTreeHeuristic(actTransMapping);
+            int maxSize = encAct.getData().getPresetEncoding().size() + encAct.getData().getPostsetEncoding().size();
+            return new GreedyETCPrecisionTreeHeuristic(actTransMapping.getData(), maxSize, delAlpha.getData().getAlpha());
         }
     }
 
@@ -61,7 +80,8 @@ public class GreedyETCPrecisionTreeHeuristic extends AbstractBaseClass implement
     @Override
     public TreeNodeScore computeHeuristic(PlaceNode node) {
         Place p = node.getPlace();
-        Map<Activity, Integer> activityToEscapingEdges = delegatingDataSource.getData();
+        Map<Activity, Integer> activityToEscapingEdges = delegatingDataSourceE.getData();
+        Map<Activity, Integer> activityToAllowed = delegatingDataSourceA.getData();
 
         if(p.isHalfEmpty()) {
             return new TreeNodeScore(Double.MAX_VALUE);
@@ -70,13 +90,19 @@ public class GreedyETCPrecisionTreeHeuristic extends AbstractBaseClass implement
                 return  new TreeNodeScore(Double.MAX_VALUE);
             } else {
 
-                int EEPostSet = 0;
+                int sumEPostSet = 0;
                 for(Transition t : node.getPlace().postset()) {
-                    Activity a = actTransMapping.getData().getKey(t);
-                    EEPostSet += activityToEscapingEdges.get(a);
+                    Activity a = actTransMapping.getKey(t);
+                    sumEPostSet += activityToEscapingEdges.get(a);
                 }
 
-                double score = (double) EEPostSet / node.getPlace().postset().size();
+                int sumAPostSet = 0;
+                for(Transition t : node.getPlace().postset()) {
+                    Activity a = actTransMapping.getKey(t);
+                    sumAPostSet += activityToAllowed.get(a);
+                }
+
+                double score = (alpha) * ((double) sumEPostSet / sumAPostSet) + (1-alpha) * (1 - (double) p.size() / maxSize);
                 return new TreeNodeScore(score);
 
             }

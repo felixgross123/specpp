@@ -42,6 +42,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
 
     private final JCheckBox updateGreedyTreeHeuristic;
     private final JCheckBox cutOffETC;
+    private final JCheckBox prematureAbort;
 
     private final JComboBox<FrameworkBridge.AnnotatedEvaluator> deltaAdaptationFunctionComboBox;
     private final JComboBox<ProMConfig.CompositionStrategy> compositionStrategyComboBox;
@@ -270,13 +271,17 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         precisionThreshold.setText("1.0");
         precisionThreshold.setToolTipText("Precision Threshold gamma in [0,1].");
         precisionThreshold.setVisible(false);
+        prematureAbort = SwingFactory.labeledCheckBox("Prematurely Abort?", true);
+        prematureAbort.setToolTipText("Prematurely abort the discovery once the threshold rho in [0,1] is reached");
+        prematureAbort.setVisible(false);
         cutOffETC = SwingFactory.labeledCheckBox("Cut off Subtrees?", false);
-        cutOffETC.setToolTipText("Enable cutting of Subtrees if place sufficiently constraints escaping edges according to rho");
+        cutOffETC.setToolTipText("Enable cutting of Subtrees if place sufficiently constraints escaping edges according to rho in [0,1]");
         cutOffETC.setVisible(false);
 
         composition.append(ETCPrecisionOrientedComposerCheckBox);
         composition.append(ETCPrecisonThreshold);
         composition.append(precisionThreshold);
+        composition.append(prematureAbort);
         composition.append(cutOffETC);
 
         composition.completeWithWhitespace();
@@ -422,6 +427,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         bridgedHeuristicsLabeledComboBox.getComboBox().setSelectedItem(pc.treeHeuristic);
         updateGreedyTreeHeuristic.setSelected(pc.updateGreedy);
         cutOffETC.setSelected(pc.cutOffETC);
+        prematureAbort.setSelected(pc.prematureAbort);
         enforceHeuristicScoreThresholdCheckBox.setSelected(pc.enforceHeuristicThreshold);
         concurrentReplayCheckBox.setSelected(pc.concurrentReplay);
         permitNegativeMarkingsCheckBox.setSelected(pc.permitNegativeMarkingsDuringReplay);
@@ -486,6 +492,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         pc.treeHeuristic = (FrameworkBridge.AnnotatedTreeHeuristic) bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem();
         pc.updateGreedy = updateGreedyTreeHeuristic.isSelected();
         pc.cutOffETC = cutOffETC.isSelected();
+        pc.prematureAbort = prematureAbort.isSelected();
         pc.enforceHeuristicThreshold = enforceHeuristicScoreThresholdCheckBox.isSelected();
         pc.concurrentReplay = concurrentReplayCheckBox.isSelected();
         pc.permitNegativeMarkingsDuringReplay = permitNegativeMarkingsCheckBox.isSelected();
@@ -556,6 +563,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
                                      .setVisible(ciprVariantCheckboxedComboBox.getCheckBox().isSelected());
         ETCPrecisonThreshold.setVisible(ETCPrecisionOrientedComposerCheckBox.isSelected());
         precisionThreshold.setVisible(ETCPrecisionOrientedComposerCheckBox.isSelected());
+        prematureAbort.setVisible(ETCPrecisionOrientedComposerCheckBox.isSelected());
         cutOffETC.setVisible(ETCPrecisionOrientedComposerCheckBox.isSelected());
         deltaAdaptationLabeledComboBox.setVisible(compositionStrategyComboBox.getSelectedItem() == ProMConfig.CompositionStrategy.TauDelta);
 
@@ -586,7 +594,7 @@ public class ConfigurationPanel extends AbstractStagePanel<ConfigurationControll
         heuristicThresholdInput.setVisible(expansionStrategyComboBox.getSelectedItem() == ProMConfig.TreeExpansionSetting.Heuristic && enforceHeuristicScoreThresholdCheckBox.isSelected());
         treeHeuristicAlpha.setVisible(expansionStrategyComboBox.getSelectedItem() == ProMConfig.TreeExpansionSetting.Heuristic &&
                 (bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.MeanMeanFirstOccIndexDelta.getBridge()
-
+                || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.GreedyETCPrecision.getBridge()
                 || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.MeanCrossMeanFirstOccIndexDelta.getBridge()
                 || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.DirectlyFollows.getBridge()
                 || bridgedHeuristicsLabeledComboBox.getComboBox().getSelectedItem() == FrameworkBridge.BridgedHeuristics.EventuallyFollows.getBridge())

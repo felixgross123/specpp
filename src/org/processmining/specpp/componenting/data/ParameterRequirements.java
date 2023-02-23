@@ -18,7 +18,7 @@ public class ParameterRequirements {
 
     public static final ParameterRequirement<TreeHeuristcAlpha> TREEHEURISTIC_ALPHA = parameters("treeheuristic_alpha", TreeHeuristcAlpha.class);
     public static final ParameterRequirement<CutOffETCBasedPrecision> CUTOFF_ETC = parameters("cutoff_etc", CutOffETCBasedPrecision.class);
-
+    public static final ParameterRequirement<PrematureAbort> PREMATURE_ABORT = parameters("premature_abort", PrematureAbort.class);
     public static final ParameterRequirement<DeltaParameters> DELTA_PARAMETERS = parameters("delta.parameters", DeltaParameters.class);
     public static final ParameterRequirement<SupervisionParameters> SUPERVISION_PARAMETERS = parameters("supervision.parameters", SupervisionParameters.class);
 

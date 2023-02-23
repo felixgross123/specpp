@@ -38,7 +38,7 @@ import org.processmining.specpp.util.PublicPaths;
 public class DevelopmentEntryPoint {
 
     public static void main(String[] args) {
-        String path = PublicPaths.ARTIFICIAL_LONGTERMDEPENDENCIES;
+        String path = PublicPaths.REALLIFE_RTFM;
         PreProcessingParameters prePar = new PreProcessingParameters(new XEventNameClassifier(), true, AverageFirstOccurrenceIndex.class);
         InputDataBundle inputData = InputData.loadData(path, prePar).getData();
         SPECppConfigBundle configuration = createConfiguration();
@@ -75,7 +75,7 @@ public class DevelopmentEntryPoint {
         //pcConfig.terminalComposer(FelixNewPlaceComposer::new);
         // PlaceAccepter oder CIPR
         pcConfig.terminalComposer(FelixNewPlaceComposer::new);
-        pcConfig.composerChain(PlaceFitnessFilter::new);
+        pcConfig.composerChain(ETCPrecisionCutOffComposer::new, PlaceFitnessFilter::new);
 
         //pcConfig.composerChain(PlaceFitnessFilter::new, PlacePreSortingForBetterSimplicity::new);
 
@@ -86,7 +86,7 @@ public class DevelopmentEntryPoint {
 
         temp_ppConfig
          //.addPostProcessor(new ReplayBasedImplicitnessPostProcessing.Builder())
-               // .addPostProcessor(SelfLoopPlaceMerger::new)
+                .addPostProcessor(SelfLoopPlaceMerger::new)
                 .addPostProcessor(new LPBasedImplicitnessPostProcessing.Builder());
         PostProcessingConfiguration.Configurator<CollectionOfPlaces, ProMPetrinetWrapper> ppConfig = temp_ppConfig.addPostProcessor(ProMConverter::new);
 
@@ -96,11 +96,13 @@ public class DevelopmentEntryPoint {
             @Override
             public void init() {
                 globalComponentSystem().provide(ParameterRequirements.IMPLICITNESS_TESTING.fulfilWithStatic(new ImplicitnessTestingParameters(ImplicitnessTestingParameters.CIPRVersion.ReplayBased, ImplicitnessTestingParameters.SubLogRestriction.None)))
-                                       .provide(ParameterRequirements.PLACE_GENERATOR_PARAMETERS.fulfilWithStatic(new PlaceGeneratorParameters(4, true, false, false, false)))
+                                       .provide(ParameterRequirements.PLACE_GENERATOR_PARAMETERS.fulfilWithStatic(new PlaceGeneratorParameters(5, true, false, false, false)))
                                        .provide(ParameterRequirements.SUPERVISION_PARAMETERS.fulfilWithStatic(SupervisionParameters.instrumentNone(true, false)))
                         .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(0.9)))
                         .provide(ParameterRequirements.PRECISION_TRHESHOLD_RHO.fulfilWithStatic(new ETCPrecisionThresholdRho(1)))
-                        .provide(ParameterRequirements.PRECISION_TRHESHOLD_GAMMA.fulfilWithStatic(new PrecisionTresholdGamma(0)));
+                        .provide(ParameterRequirements.PRECISION_TRHESHOLD_GAMMA.fulfilWithStatic(new PrecisionTresholdGamma(0)))
+                        .provide(ParameterRequirements.CUTOFF_ETC.fulfilWithStatic(new CutOffETCBasedPrecision(false)))
+                        .provide(ParameterRequirements.PREMATURE_ABORT.fulfilWithStatic(new PrematureAbort(true)));
             }
         };
 

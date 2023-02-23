@@ -19,6 +19,7 @@ import org.processmining.specpp.composition.events.*;
 import org.processmining.specpp.config.parameters.CutOffETCBasedPrecision;
 import org.processmining.specpp.config.parameters.ETCPrecisionThresholdRho;
 import org.processmining.specpp.config.parameters.PrecisionTresholdGamma;
+import org.processmining.specpp.config.parameters.PrematureAbort;
 import org.processmining.specpp.datastructures.encoding.BitEncodedSet;
 import org.processmining.specpp.datastructures.log.Activity;
 import org.processmining.specpp.datastructures.log.Log;
@@ -38,6 +39,7 @@ import org.processmining.specpp.supervision.observations.DebugEvent;
 import org.processmining.specpp.supervision.piping.Observable;
 import org.processmining.specpp.supervision.piping.PipeWorks;
 import org.processmining.specpp.util.JavaTypingUtils;
+import org.python.antlr.op.Del;
 
 import java.nio.IntBuffer;
 import java.util.*;
@@ -54,6 +56,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     private final DelegatingDataSource<PrecisionTresholdGamma> gamma = new DelegatingDataSource<>();
 
     private final DelegatingDataSource<CutOffETCBasedPrecision> cutOff = new DelegatingDataSource<>();
+    private final DelegatingDataSource<PrematureAbort> prematureAbort = new DelegatingDataSource<>();
     private final PrefixAutomaton prefixAutomaton = new PrefixAutomaton(new PAState());
     private final Map<Activity, Set<Place>> activityToIngoingPlaces = new HashMap<>();
     private Map<Activity, Integer> activityToEscapingEdges = new HashMap<>();
@@ -66,11 +69,17 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
     public FelixNewPlaceComposer(I composition) {
         super(composition, c -> new CollectionOfPlaces(c.toList()));
 
-        ConsumingContainer<DataSource<DelegatingDataSource<Map<Activity, Integer>>>> consActivitiesToEscapingEdges = new ConsumingContainer<>(del -> del.getData().setDelegate(StaticDataSource.of(activityToEscapingEdges)));
-        globalComponentSystem().require(DataRequirements.dataSource("activitiesToEscapingEdges_Map", JavaTypingUtils.castClass(DelegatingDataSource.class)), consActivitiesToEscapingEdges);
+        ConsumingContainer<DataSource<DelegatingDataSource<Map<Activity, Integer>>>> consActivitiesToEscapingEdgesUpdatingGreedyETC = new ConsumingContainer<>(del -> del.getData().setDelegate(StaticDataSource.of(activityToEscapingEdges)));
+        globalComponentSystem().require(DataRequirements.dataSource("activitiesToEscapingEdges_UpdatingGreedyETC", JavaTypingUtils.castClass(DelegatingDataSource.class)), consActivitiesToEscapingEdgesUpdatingGreedyETC);
 
-        ConsumingContainer<DataSource<DelegatingDataSource<Map<Activity, Integer>>>> consActivitiesToEscapingEdges1 = new ConsumingContainer<>(del -> del.getData().setDelegate(StaticDataSource.of(activityToEscapingEdges)));
-        globalComponentSystem().require(DataRequirements.dataSource("activitiesToEscapingEdges_Map_1", JavaTypingUtils.castClass(DelegatingDataSource.class)), consActivitiesToEscapingEdges1);
+        ConsumingContainer<DataSource<DelegatingDataSource<Map<Activity, Integer>>>> consActivitiesAllowedUpdatingGreedyETC = new ConsumingContainer<>(del -> del.getData().setDelegate(StaticDataSource.of(activityToAllowed)));
+        globalComponentSystem().require(DataRequirements.dataSource("activitiesToAllowed_UpdatingGreedyETC", JavaTypingUtils.castClass(DelegatingDataSource.class)), consActivitiesAllowedUpdatingGreedyETC);
+
+        ConsumingContainer<DataSource<DelegatingDataSource<Map<Activity, Integer>>>> consActivitiesToEscapingEdgesGreedyETC = new ConsumingContainer<>(del -> del.getData().setDelegate(StaticDataSource.of(activityToEscapingEdges)));
+        globalComponentSystem().require(DataRequirements.dataSource("activitiesToEscapingEdges_GreedyETC", JavaTypingUtils.castClass(DelegatingDataSource.class)), consActivitiesToEscapingEdgesGreedyETC);
+
+        ConsumingContainer<DataSource<DelegatingDataSource<Map<Activity, Integer>>>> consActivitiesToAllowedGreedyETC = new ConsumingContainer<>(del -> del.getData().setDelegate(StaticDataSource.of(activityToAllowed)));
+        globalComponentSystem().require(DataRequirements.dataSource("activitiesToAllowed_GreedyETC", JavaTypingUtils.castClass(DelegatingDataSource.class)), consActivitiesToAllowedGreedyETC);
 
 
         globalComponentSystem().require(DataRequirements.RAW_LOG, logSource)
@@ -79,13 +88,14 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
                                .require(ParameterRequirements.PRECISION_TRHESHOLD_RHO, rho)
                                .require(ParameterRequirements.PRECISION_TRHESHOLD_GAMMA, gamma)
                                .require(ParameterRequirements.CUTOFF_ETC, cutOff)
+                               .require(ParameterRequirements.PREMATURE_ABORT, prematureAbort)
                                .provide(SupervisionRequirements.observable("felix.debug", DebugEvent.class, eventSupervisor))
-                               .provide(SupervisionRequirements.observable("composer.constraints.ETCCutOff", getPublishedConstraintClass(), getConstraintPublisher()))
-                                .provide(DataRequirements.dataSource("activitiesToAllowed", JavaTypingUtils.castClass(Map.class), StaticDataSource.of(activityToAllowed)))
-                                .provide(DataRequirements.dataSource("activitiesToEscapingEdges", JavaTypingUtils.castClass(Map.class), StaticDataSource.of(activityToEscapingEdges)));
-
+                               .provide(SupervisionRequirements.observable("composer.constraints.ETCCutOff", getPublishedConstraintClass(), getConstraintPublisher()));
         localComponentSystem().provide(SupervisionRequirements.observable("composer.events", JavaTypingUtils.castClass(CandidateCompositionEvent.class), compositionEventSupervision))
-                              .provide(SupervisionRequirements.observable("composer.constraints.ETCCutOff", getPublishedConstraintClass(), getConstraintPublisher()));
+                              .provide(SupervisionRequirements.observable("composer.constraints.ETCCutOff", getPublishedConstraintClass(), getConstraintPublisher()))
+                .provide(DataRequirements.dataSource("activitiesToAllowed", JavaTypingUtils.castClass(Map.class), StaticDataSource.of(activityToAllowed)))
+                .provide(DataRequirements.dataSource("activitiesToEscapingEdges", JavaTypingUtils.castClass(Map.class), StaticDataSource.of(activityToEscapingEdges)));
+        ;
     }
 
 
@@ -183,8 +193,8 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
         if (gamma.getData().getG() == 0) {
             if(isMorePrecise) {
-                activityToEscapingEdges = tmpActivityToEscapingEdges;
-                activityToAllowed = tmpActivityToAllowed;
+                activityToEscapingEdges.putAll(tmpActivityToEscapingEdges);
+                activityToAllowed.putAll(tmpActivityToAllowed);
                 currETCPrecision = newETCPrecision;
                 return true;
             }
@@ -193,8 +203,8 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
 
         if (newETCPrecision - currETCPrecision > gamma.getData().getG() ) {
             //note: if p brings gain in precision we assume that it will be accepted (hence we update the scores)
-            activityToEscapingEdges = tmpActivityToEscapingEdges;
-            activityToAllowed = tmpActivityToAllowed;
+            activityToEscapingEdges.putAll(tmpActivityToEscapingEdges);
+            activityToAllowed.putAll(tmpActivityToAllowed);
             currETCPrecision = newETCPrecision;
             return true;
         }
@@ -248,8 +258,8 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
         if(currETCPrecision - newETCPrecision > gamma.getData().getG()) {
             return false;
         } else {
-            activityToEscapingEdges = tmpActivityToEscapingEdges;
-            activityToAllowed = tmpActivityToAllowed;
+            activityToEscapingEdges.putAll(tmpActivityToEscapingEdges);
+            activityToAllowed.putAll(tmpActivityToAllowed);
             currETCPrecision = newETCPrecision;
             return true;
         }
@@ -375,7 +385,7 @@ public class FelixNewPlaceComposer<I extends AdvancedComposition<Place>> extends
      */
     @Override
     public boolean isFinished() {
-        if(newAddition) {
+        if(prematureAbort.getData().getPrematureAbort() && newAddition) {
             newAddition = false;
             return checkPrecisionThreshold(rho.get().getP());
         } else {

@@ -24,7 +24,7 @@ import java.util.PrimitiveIterator;
 
 public class EventuallyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNode, TreeNodeScore>, ZeroOneBounded, SubtreeMonotonicity.Decreasing {
 
-    public EventuallyFollowsTreeHeuristic(double[][] eventuallyFollows, double alpha, double maxEF, int maxSize) {
+    public EventuallyFollowsTreeHeuristic(int[][] eventuallyFollows, double alpha, double maxEF, int maxSize) {
         this.eventuallyFollows = eventuallyFollows;
         this.alpha = alpha;
         this.maxEF = maxEF;
@@ -52,11 +52,9 @@ public class EventuallyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNo
             int preSize = presetEncoding.size();
             int postSize = postsetEncoding.size();
 
-            double[][] ef = new double[preSize][postSize];
-            double[][] coocc = new double[preSize][postSize];
+            int[][] ef = new int[preSize][postSize];
             for (int i = 0; i < ef.length; i++) {
-                ef[i] = new double[postSize];
-                coocc[i] = new double[postSize];
+                ef[i] = new int[postSize];
             }
 
             for (IndexedVariant indexedVariant : log) {
@@ -71,34 +69,18 @@ public class EventuallyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNo
                             if (postsetEncoding.isInDomain(b)) {
                                 Integer n = postsetEncoding.encode(b);
                                 ef[m][n] += f;
-                                coocc[m][n] += f;
-                            }
-                        }
-                    }
-                    if (postsetEncoding.isInDomain(a)) {
-                        Integer m = postsetEncoding.encode(a);
-                        for (int j = i + 1; j < variant.getLength(); j++) {
-                            Activity b = variant.getAt(j);
-                            if (presetEncoding.isInDomain(b)) {
-                                Integer n = presetEncoding.encode(b);
-                                coocc[m][n] += f;
                             }
                         }
                     }
                 }
             }
 
-            for (int i = 0; i < ef.length; i++) {
-                for (int j = 0; j < ef[i].length; j++) {
-                    ef[i][j] /= Math.max(1, coocc[i][j]);
-                }
-            }
 
             //search for max EF value
             double maxEF = 0;
 
-            for (double[] rows : ef) {
-                for (double entry : rows) {
+            for (int[] rows : ef) {
+                for (int entry : rows) {
                     if (entry > maxEF) {
                         maxEF = entry;
                     }
@@ -111,31 +93,19 @@ public class EventuallyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNo
         }
     }
 
-    protected double[][] eventuallyFollows;
+    protected int[][] eventuallyFollows;
     private final double alpha;
     private final double maxEF;
     private final int maxSize;
 
     @Override
     public TreeNodeScore computeHeuristic(PlaceNode node) {
-        Place p = node.getPlace();
-        if (p.isHalfEmpty()) return new TreeNodeScore(1);
+        double sum = node.getPlace().preset()
+                .streamIndices()
+                .flatMap(i -> node.getPlace().postset().streamIndices().map(j -> eventuallyFollows[i][j]))
+                .sum();
 
-        PrimitiveIterator.OfInt preIt = p.preset().getBitMask().iterator();
-        double min = Integer.MAX_VALUE;
-        while (preIt.hasNext()) {
-            int i = preIt.nextInt();
-            PrimitiveIterator.OfInt postIt = p.postset().getBitMask().iterator();
-            while (postIt.hasNext()) {
-                int j = postIt.nextInt();
-                double v = eventuallyFollows[i][j];
-                if (v < min) min = v;
-            }
-        }
-        assert 0 <= min;
-        assert min < Integer.MAX_VALUE;
-
-        double score = alpha * (min / maxEF) + (1-alpha) * (1 - ((double) node.getPlace().size() / maxSize));
+        double score = alpha * ((double) sum / (node.getPlace().preset().size() * node.getPlace().postset().size()) / maxEF) + (1-alpha) * (1 - ((double) node.getPlace().size() / maxSize));
         return new TreeNodeScore(score);
     }
 

@@ -6,10 +6,7 @@ import org.processmining.framework.util.ui.widgets.ProMTable;
 import org.processmining.specpp.composition.events.CandidateAcceptanceRevoked;
 import org.processmining.specpp.composition.events.CandidateAccepted;
 import org.processmining.specpp.composition.events.CandidateRejected;
-import org.processmining.specpp.datastructures.tree.constraints.ClinicallyOverfedPlace;
-import org.processmining.specpp.datastructures.tree.constraints.ClinicallyUnderfedPlace;
-import org.processmining.specpp.datastructures.tree.constraints.CullPostsetChildren;
-import org.processmining.specpp.datastructures.tree.constraints.CullPresetChildren;
+import org.processmining.specpp.datastructures.tree.constraints.*;
 import org.processmining.specpp.datastructures.tree.events.*;
 import org.processmining.specpp.prom.alg.LiveEvents;
 import org.processmining.specpp.prom.computations.ComputationEnded;
@@ -35,6 +32,7 @@ public class EventTable extends JPanel implements Destructible, Observer<Computa
                                                                                                                                 .put(new ClassKey<>(ClinicallyOverfedPlace.class), "A place met the \u25B3(L) >= 1-tau threshold")
                                                                                                                                 .put(new ClassKey<>(CandidateRejected.class), "A place was rejected")
                                                                                                                                 .put(new ClassKey<>(CandidateAccepted.class), "A place was accepted")
+                                                                                                                                .put(new ClassKey<>(ETCPrecisionConstraint.class), "A tree nodes subtrees were cutoff (postset met ETC-Precision threshold)")
                                                                                                                                 .put(new ClassKey<>(CandidateAcceptanceRevoked.class), "An accepted place was removed again")
                                                                                                                                 .put(new ClassKey<>(NodeExpansionEvent.class), "A tree node's child node was generated")
                                                                                                                                 .put(new ClassKey<>(NodeExhaustionEvent.class), "A tree node's potential child nodes were exhausted")

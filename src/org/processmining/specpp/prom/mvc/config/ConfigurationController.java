@@ -181,12 +181,14 @@ public class ConfigurationController extends AbstractStageController {
                 if (pc.useETCPrecisionOriented) {
                     globalComponentSystem().provide(ParameterRequirements.PRECISION_TRHESHOLD_RHO.fulfilWithStatic(new ETCPrecisionThresholdRho(pc.p)));
                     globalComponentSystem().provide(ParameterRequirements.PRECISION_TRHESHOLD_GAMMA.fulfilWithStatic(new PrecisionTresholdGamma(pc.g)));
+                    globalComponentSystem().provide(ParameterRequirements.PREMATURE_ABORT.fulfilWithStatic(new PrematureAbort(pc.prematureAbort)));
                     globalComponentSystem().provide(ParameterRequirements.CUTOFF_ETC.fulfilWithStatic(new CutOffETCBasedPrecision(pc.cutOffETC)));
                 }
                 if (pc.enforceHeuristicThreshold)
                     globalComponentSystem().provide(ParameterRequirements.TREE_HEURISTIC_THRESHOLD.fulfilWithStatic(new TreeHeuristicThreshold(pc.heuristicThreshold, pc.heuristicThresholdRelation)));
                 if(pc.treeExpansionSetting == ProMConfig.TreeExpansionSetting.Heuristic &&
                         (pc.treeHeuristic == FrameworkBridge.BridgedHeuristics.MeanMeanFirstOccIndexDelta.getBridge()
+                        || pc.treeHeuristic == FrameworkBridge.BridgedHeuristics.GreedyETCPrecision.getBridge()
                         || pc.treeHeuristic  == FrameworkBridge.BridgedHeuristics.MeanCrossMeanFirstOccIndexDelta.getBridge()
                         || pc.treeHeuristic  == FrameworkBridge.BridgedHeuristics.DirectlyFollows.getBridge()
                         || pc.treeHeuristic  == FrameworkBridge.BridgedHeuristics.EventuallyFollows.getBridge())

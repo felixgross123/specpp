@@ -103,7 +103,7 @@ public class DirectlyFollowsTreeHeuristic implements HeuristicStrategy<PlaceNode
                 .flatMap(i -> node.getPlace().postset().streamIndices().map(j -> dfCounts[i][j]))
                 .sum();
 
-        double score = alpha * (((double) sum / node.getPlace().size()) / maxDF) + (1-alpha) * (1-((double) node.getPlace().size() / maxSize));
+        double score = alpha * (((double) sum / (node.getPlace().preset().size() * node.getPlace().postset().size())) / maxDF) + (1-alpha) * (1-((double) node.getPlace().size() / maxSize));
 
         return new TreeNodeScore(score);
     }

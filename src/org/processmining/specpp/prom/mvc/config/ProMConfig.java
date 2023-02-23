@@ -28,7 +28,7 @@ public class ProMConfig {
 
     boolean updateGreedy;
 
-    boolean cutOffETC;
+    boolean cutOffETC, prematureAbort;
 
     public boolean useETCPrecisionOriented;
 
@@ -61,6 +61,7 @@ public class ProMConfig {
         pc.p = 1.0;
         pc.g = 0.0;
         pc.cutOffETC = false;
+        pc.prematureAbort = true;
         pc.ppPipeline = ImmutableList.of(FrameworkBridge.BridgedPostProcessors.LPBasedImplicitPlaceRemoval.getBridge(), FrameworkBridge.BridgedPostProcessors.ProMPetrinetConversion.getBridge());
         pc.tau = 1.0;
         pc.alpha = 1.0;

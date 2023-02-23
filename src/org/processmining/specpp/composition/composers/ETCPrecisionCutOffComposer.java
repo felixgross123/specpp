@@ -50,10 +50,10 @@ public class ETCPrecisionCutOffComposer<I extends CompositionComponent<Place>, R
         super(childComposer);
         globalComponentSystem().require(ParameterRequirements.PRECISION_TRHESHOLD_RHO, rho)
                                 .require(DataRequirements.ACT_TRANS_MAPPING, actTransMapping)
+                        .provide(SupervisionRequirements.observable("composer.constraints.ETCCutOff", getPublishedConstraintClass(), getConstraintPublisher()));
+        localComponentSystem().provide(SupervisionRequirements.observable("composer.constraints.ETCCutOff", getPublishedConstraintClass(), getConstraintPublisher()))
                 .require(dataSource("activitiesToAllowed", JavaTypingUtils.castClass(Map.class)), activitiesToAllowed)
-                .require(dataSource("activitiesToEscapingEdges", JavaTypingUtils.castClass(Map.class)), activitiesToEscapingEdges)
-                                .provide(SupervisionRequirements.observable("composer.constraints.ETCCutOff", getPublishedConstraintClass(), getConstraintPublisher()));
-        localComponentSystem().provide(SupervisionRequirements.observable("composer.constraints.ETCCutOff", getPublishedConstraintClass(), getConstraintPublisher()));
+                .require(dataSource("activitiesToEscapingEdges", JavaTypingUtils.castClass(Map.class)), activitiesToEscapingEdges);
     }
 
     @Override
