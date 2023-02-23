@@ -5,6 +5,7 @@ import org.processmining.specpp.base.AdvancedComposition;
 import org.processmining.specpp.componenting.data.ParameterRequirements;
 import org.processmining.specpp.componenting.evaluation.EvaluatorConfiguration;
 import org.processmining.specpp.composition.StatefulPlaceComposition;
+import org.processmining.specpp.composition.composers.ETCPrecisionCutOffComposer;
 import org.processmining.specpp.composition.composers.FelixNewPlaceComposer;
 import org.processmining.specpp.composition.composers.PlaceFitnessFilter;
 import org.processmining.specpp.config.*;
@@ -19,7 +20,7 @@ import org.processmining.specpp.datastructures.tree.nodegen.MonotonousPlaceGener
 import org.processmining.specpp.datastructures.tree.nodegen.PlaceNode;
 import org.processmining.specpp.datastructures.tree.nodegen.PlaceState;
 import org.processmining.specpp.evaluation.fitness.AbsolutelyNoFrillsFitnessEvaluator;
-import org.processmining.specpp.evaluation.heuristics.*;
+import org.processmining.specpp.evaluation.heuristics.MeanCrossMeanFirstOccIndexDeltaTreeHeuristic;
 import org.processmining.specpp.evaluation.implicitness.LPBasedImplicitnessCalculator;
 import org.processmining.specpp.evaluation.markings.LogHistoryMaker;
 import org.processmining.specpp.orchestra.PreProcessingParameters;
@@ -42,7 +43,7 @@ import org.processmining.specpp.util.PublicPaths;
 public class DevelopmentEntryPointWTreeHeuristic {
 
     public static void main(String[] args) {
-        String path = PublicPaths.REALLIFE_RTFM;
+        String path = PublicPaths.ARTIFICIAL_IMPLICITPLACES;
         PreProcessingParameters prePar = new PreProcessingParameters(new XEventNameClassifier(), true, AverageFirstOccurrenceIndex.class);
         InputDataBundle inputData = InputData.loadData(path, prePar).getData();
         SPECppConfigBundle configuration = createConfiguration();
@@ -82,7 +83,9 @@ public class DevelopmentEntryPointWTreeHeuristic {
         pcConfig.terminalComposer(FelixNewPlaceComposer::new);
         // PlaceAccepter oder CIPR
 
-        pcConfig.composerChain(PlaceFitnessFilter::new);
+        pcConfig.composerChain(ETCPrecisionCutOffComposer::new, PlaceFitnessFilter::new);
+
+        //pcConfig.composerChain(PlaceFitnessFilter::new);
 
         //pcConfig.composerChain(PlaceFitnessFilter::new, PlacePreSortingForBetterSimplicity::new);
 
@@ -92,9 +95,9 @@ public class DevelopmentEntryPointWTreeHeuristic {
         // ppConfig.processor(SelfLoopPlaceMerger::new);
 
         temp_ppConfig
-         //.addPostProcessor(new ReplayBasedImplicitnessPostProcessing.Builder())
+                //.addPostProcessor(new ReplayBasedImplicitnessPostProcessing.Builder())
                 .addPostProcessor(SelfLoopPlaceMerger::new)
-                  .addPostProcessor(new LPBasedImplicitnessPostProcessing.Builder());
+                .addPostProcessor(new LPBasedImplicitnessPostProcessing.Builder());
         PostProcessingConfiguration.Configurator<CollectionOfPlaces, ProMPetrinetWrapper> ppConfig = temp_ppConfig.addPostProcessor(ProMConverter::new);
 
         // ** Parameters ** //
@@ -104,10 +107,11 @@ public class DevelopmentEntryPointWTreeHeuristic {
             public void init() {
                 globalComponentSystem().provide(ParameterRequirements.PLACE_GENERATOR_PARAMETERS.fulfilWithStatic(new PlaceGeneratorParameters(5, true, false, false, false)))
                                        .provide(ParameterRequirements.SUPERVISION_PARAMETERS.fulfilWithStatic(SupervisionParameters.instrumentNone(true, false)))
-                        .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(0.6)))
-                        .provide(ParameterRequirements.PRECISION_TRHESHOLD_RHO.fulfilWithStatic(new ETCPrecisionThresholdRho(1.0)))
-                        .provide(ParameterRequirements.TREEHEURISTIC_ALPHA.fulfilWithStatic(new TreeHeuristcAlpha(1.0)))
-                        .provide(ParameterRequirements.PRECISION_TRHESHOLD_GAMMA.fulfilWithStatic(new PrecisionTresholdGamma(0)));
+                                       .provide(ParameterRequirements.TAU_FITNESS_THRESHOLDS.fulfilWithStatic(new TauFitnessThresholds(0.6)))
+                                       .provide(ParameterRequirements.PRECISION_TRHESHOLD_RHO.fulfilWithStatic(new ETCPrecisionThresholdRho(1.0)))
+                                       .provide(ParameterRequirements.TREEHEURISTIC_ALPHA.fulfilWithStatic(new TreeHeuristcAlpha(1.0)))
+                                       .provide(ParameterRequirements.CUTOFF_ETC.fulfilWithStatic(new CutOffETCBasedPrecision(true)))
+                                       .provide(ParameterRequirements.PRECISION_TRHESHOLD_GAMMA.fulfilWithStatic(new PrecisionTresholdGamma(0)));
             }
         };
 

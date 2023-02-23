@@ -55,6 +55,7 @@ public class PlaceFitnessFilter<I extends CompositionComponent<Place>, R extends
         TauFitnessThresholds thresholds = fitnessThresholds.getData();
         if (FitnessThresholder.isUnderfed(fitness, thresholds)) {
             constraintEvents.observe(new ClinicallyUnderfedPlace(place));
+            constraintEvents.observe(new ClinicallyOverfedPlace(place));
             gotFiltered(place);
         } else if (FitnessThresholder.isOverfed(fitness, thresholds)) {
             constraintEvents.observe(new ClinicallyOverfedPlace(place));
